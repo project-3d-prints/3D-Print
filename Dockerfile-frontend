@@ -1,0 +1,7 @@
+FROM node:18
+WORKDIR /my
+COPY my/package.json my/package-lock.json ./
+RUN npm install
+COPY my/ .
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
