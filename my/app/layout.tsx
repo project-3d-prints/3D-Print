@@ -1,11 +1,12 @@
 import "./globals.css";
-import { Inter } from "next/font/google";
-import ClientNav from "./ClientNav";
+import { Raleway } from "next/font/google";
+import Sidebar from "./Sidebar";
+import { Toaster } from "react-hot-toast";
 
-const inter = Inter({ subsets: ["latin"] });
+const raleway = Raleway({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "3D Print Queue Management",
+  title: "3D Print",
   description: "Web app for managing 3D printing queue",
 };
 
@@ -16,9 +17,31 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-100 min-h-screen`}>
-        <ClientNav />
-        <main className="container mx-auto p-4">{children}</main>
+      <body
+        className={`${raleway.className} bg-[var(--background)] min-h-screen flex`}
+      >
+        <Sidebar />
+        <main className="ml-64 p-4 w-full">
+          {children}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              success: {
+                style: {
+                  background: "#4CAF50",
+                  color: "#FFFFFF",
+                },
+              },
+              error: {
+                style: {
+                  background: "#F44336",
+                  color: "#FFFFFF",
+                },
+              },
+              duration: 5000,
+            }}
+          />
+        </main>
       </body>
     </html>
   );

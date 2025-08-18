@@ -1,83 +1,108 @@
 "use client";
+
 import { useState } from "react";
 import { register } from "../../lib/api";
-import { useRouter } from "next/navigation";
-
-interface RegisterState {
-  username: string;
-  password: string;
-  role: "student" | "teacher" | "lab_head";
-  error: string;
-}
+import Link from "next/link";
+import toast from "react-hot-toast";
 
 export default function Register() {
-  const [state, setState] = useState<RegisterState>({
-    username: "",
-    password: "",
-    role: "student",
-    error: "",
-  });
-  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [role, setRole] = useState("студент");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username || !password || password.length < 6) {
+      toast.error(
+        "Please fill all fields and use a password with at least 6 characters."
+      );
+      return;
+    }
     try {
-      await register(state.username, state.password, state.role);
-      router.push("/login");
-    } catch (err: any) {
-      setState({
-        ...state,
-        error: err.response?.data?.detail || "Registration failed",
-      });
+      console.log("Sending registration data:", { username, role, password });
+      const response = await register({ username, role, password });
+      console.log("Registration response:", response);
+      toast.success("Регистрация прошла успешно!");
+      window.location.href = "/login";
+    } catch (error: any) {
+      console.error("Ошибка регистрации:", error.message);
+      toast.error(`Failed to register: ${error.message}`);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Register</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Username"
-          value={state.username}
-          onChange={(e) => setState({ ...state, username: e.target.value })}
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={state.password}
-          onChange={(e) => setState({ ...state, password: e.target.value })}
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <select
-          value={state.role}
-          onChange={(e) =>
-            setState({
-              ...state,
-              role: e.target.value as "student" | "teacher" | "lab_head",
-            })
-          }
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="student">Student</option>
-          <option value="teacher">Teacher</option>
-          <option value="lab_head">Lab Head</option>
-        </select>
-        {state.error && <p className="text-red-500 text-sm">{state.error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition"
-        >
-          Register
-        </button>
-      </form>
-      <p className="mt-4 text-gray-600">
-        Back to{" "}
-        <a href="/login" className="text-blue-500 hover:underline">
-          Login
-        </a>
-      </p>
+    <div className="container mx-auto p-4 flex items-center justify-center min-h-screen">
+      <div className="bg-white p-6 rounded-md shadow-md max-w-md w-full">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Регистрация</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Имя пользователя
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+              placeholder="e.g., john_doe"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="role"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Роль
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+              required
+            >
+              <option value="студент">Студент</option>
+              <option value="учитель">Учитель</option>
+              <option value="глава лаборатории">Глава лаборатории</option>
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Пароль
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+              required
+            />
+          </div>
+          <div className="flex justify-end space-x-4">
+            <Link
+              href="/login"
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Уже есть аккаунт? Войти
+            </Link>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700"
+            >
+              Зарегистрироваться
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

@@ -1,57 +1,60 @@
 "use client";
-import { useState, useEffect } from "react";
-import { createPrinter } from "../../lib/api";
-import { useAuthStore } from "../../lib/store";
-import { useRouter } from "next/navigation";
 
-interface PrinterFormState {
-  name: string;
-  error: string;
-}
+import { useState } from "react";
+import { createPrinter } from "../../../lib/api";
+import toast from "react-hot-toast";
 
-export default function CreatePrinter() {
-  const { isAuthenticated, user } = useAuthStore();
-  const router = useRouter();
-  const [state, setState] = useState<PrinterFormState>({ name: "", error: "" });
-
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== "lab_head") {
-      router.push("/login");
-    }
-  }, [isAuthenticated, user, router]);
+export default function AddPrinter() {
+  const [name, setName] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createPrinter(state.name);
-      router.push("/printers");
-    } catch (err: any) {
-      setState({
-        ...state,
-        error: err.response?.data?.detail || "Failed to create printer",
-      });
+      await createPrinter(name);
+      toast.success("Принтер успешно добавлен!");
+      setName("");
+    } catch (error) {
+      console.error("Error adding printer:", error);
+      toast.error("Failed to add printer");
     }
   };
 
+  
+
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Create Printer</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Printer Name"
-          value={state.name}
-          onChange={(e) => setState({ ...state, name: e.target.value })}
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        {state.error && <p className="text-red-500 text-sm">{state.error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition"
-        >
-          Create Printer
-        </button>
-      </form>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-cyan-700 mb-6">
+        Добавить принтер
+      </h1>
+      <div className="bg-white p-6 rounded-md shadow-md max-w-lg mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-cyan-700"
+            >
+              Название принтера
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cayn-700 focus:border-cayn-600"
+              placeholder="e.g., Ender 3"
+              required
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-cyan-700"
+            >
+              Сохранить
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

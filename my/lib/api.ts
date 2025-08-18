@@ -1,8 +1,16 @@
-import axios from "axios";
+// lib/api.ts
+export interface Material {
+  id: number;
+  name: string;
+  printer: string;
+  quantity_printer: number;
+  quantity_storage: number;
+}
 
-export interface User {
-  username: string;
-  role: "student" | "teacher" | "lab_head";
+export interface Printer {
+  id: number;
+  name: string;
+  status: string;
 }
 
 export interface Job {
@@ -11,81 +19,90 @@ export interface Job {
   duration: number;
   deadline: string;
   material_amount: number;
+  user: string;
+  date: string;
+  material: string;
+  priority: number;
 }
 
-export interface Printer {
-  id: number;
-  name: string;
-  username: string;
-}
-
-export interface Material {
-  id: number;
-  name: string;
-  quantity: number;
-  printer_id: number;
-}
-
-const api = axios.create({
-  baseURL:
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:8000"
-      : "http://web:8000",
-  withCredentials: true,
-});
-
-export const login = async (username: string, password: string) => {
-  return api.post<{ token: string }>("/users/auth/login", {
-    username,
-    password,
-  });
+export const getMaterials = async () => {
+  const materials = JSON.parse(localStorage.getItem("materials") || "[]");
+  return { data: materials };
 };
 
-export const getCurrentUser = async () => {
-  return api.get<User>("/users/auth/me");
+export const getMaterial = async (id: number) => {
+  const materials = JSON.parse(localStorage.getItem("materials") || "[]");
+  const material = materials.find((m: Material) => m.id === id);
+  return { data: material || { quantity_printer: 0, quantity_storage: 0 } };
 };
 
-export const register = async (
-  username: string,
-  password: string,
-  role: string
+export const createMaterial = async (material: Material) => {
+  const materials = JSON.parse(localStorage.getItem("materials") || "[]");
+  const newMaterial = { ...material, id: materials.length + 1 };
+  materials.push(newMaterial);
+  localStorage.setItem("materials", JSON.stringify(materials));
+  return { data: newMaterial };
+};
+
+export const updateMaterial = async (
+  id: number,
+  updates: { quantity_printer: number; quantity_storage: number }
 ) => {
-  return api.post("/users/auth/register", { username, password, role });
-};
-
-export const createJob = async (jobData: {
-  printer_id: number;
-  duration: number;
-  deadline: string;
-  material_amount: number;
-}) => {
-  return api.post<Job>("/jobs", jobData);
-};
-
-export const getQueue = async (printerId: number, day: string | null) => {
-  return api.get<Job[]>(`/jobs/queue/${printerId}`, { params: { day } });
+  let materials = JSON.parse(localStorage.getItem("materials") || "[]");
+  materials = materials.map((m: Material) =>
+    m.id === id ? { ...m, ...updates } : m
+  );
+  localStorage.setItem("materials", JSON.stringify(materials));
+  return { data: { id, ...updates } };
 };
 
 export const getPrinters = async () => {
-  return api.get<Printer[]>("/printers");
+  const printers = JSON.parse(localStorage.getItem("printers") || "[]");
+  return { data: printers };
 };
 
-export const createPrinter = async (name: string) => {
-  return api.post<Printer>("/printers", { name });
-};
-
-export const getMaterials = async () => {
-  return api.get<Material[]>("/materials");
-};
-
-export const createMaterial = async (materialData: {
+export const createPrinter = async (printer: {
   name: string;
-  quantity: number;
-  printer_id: number;
+  status: string;
 }) => {
-  return api.post<Material>("/materials", materialData);
+  const printers = JSON.parse(localStorage.getItem("printers") || "[]");
+  const newPrinter = { id: printers.length + 1, ...printer };
+  printers.push(newPrinter);
+  localStorage.setItem("printers", JSON.stringify(printers));
+  return { data: newPrinter };
 };
 
-export const updateMaterial = async (materialId: number, quantity: number) => {
-  return api.patch<Material>(`/materials/${materialId}`, { quantity });
+export const getQueue = async (printerId: number, day: string) => {
+  const jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
+  return {
+    data: jobs.filter(
+      (j: Job) => j.printer_id === printerId && (!day || j.date.includes(day))
+    ),
+  };
+};
+
+export const register = async (data: {
+  username: string;
+  role: string;
+  password: string;
+}) => {
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+  if (users.find((u: any) => u.username === data.username)) {
+    throw new Error("Username already exists");
+  }
+  const newUser = { id: users.length + 1, ...data };
+  users.push(newUser);
+  localStorage.setItem("users", JSON.stringify(users));
+  return { data: newUser };
+};
+
+export const login = async (username: string, password: string) => {
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+  const user = users.find(
+    (u: any) => u.username === username && u.password === password
+  );
+  if (!user) {
+    throw new Error("Invalid username or password");
+  }
+  return { data: user };
 };

@@ -1,0 +1,129 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuthStore } from "../lib/store";
+import Image from "next/image";
+
+export default function Sidebar() {
+  const { isAuthenticated, user, clearAuth } = useAuthStore();
+  const pathname = usePathname();
+
+  const navItems = [
+    {
+      href: "/dashboard",
+      label: "Главная",
+      icon: "/img/star2.svg",
+      iconActive: "/img/star.svg",
+    },
+    {
+      href: "/printers/create",
+      label: "Добавить принтер",
+      icon: "/img/printer.svg",
+      iconActive: "/img/printer2.svg",
+    },
+    {
+      href: "/printers",
+      label: "Список принтеров",
+      icon: "/img/list.svg",
+      iconActive: "/img/list2.svg",
+    },
+    {
+      href: "/materials/create",
+      label: "Добавить материал",
+      icon: "/img/flask.svg",
+      iconActive: "/img/flask2.svg",
+    },
+    {
+      href: "/materials",
+      label: "Список материалов",
+      icon: "/img/material.svg",
+      iconActive: "/img/material2.svg",
+    },
+    {
+      href: "/jobs/create",
+      label: "Создать заявку",
+      icon: "/img/add.svg",
+      iconActive: "/img/add2.svg",
+    },
+    {
+      href: "/jobs/queue",
+      label: "Очередь заявок",
+      icon: "/img/queue.svg",
+      iconActive: "/img/queue2.svg",
+    },
+  ];
+
+  return (
+    <aside className="fixed top-0 left-0 h-screen w-64 bg-cyan-700 text-cyan-50 p-4">
+      <div className="mb-8">
+        <h1 className="text-xl font-bold">ЗD Print</h1>
+      </div>
+      <nav className="space-y-2">
+        {navItems.map(
+          (item) =>
+            isAuthenticated && (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center space-x-2 p-2 rounded-md transition-colors duration-200 hover:bg-cyan-50 hover:text-cyan-700 ${
+                  pathname === item.href ? "bg-cyan-50 text-cyan-700" : ""
+                }`}
+              >
+                <Image
+                  src={
+                    pathname === item.href || pathname.startsWith(item.href)
+                      ? item.iconActive
+                      : item.icon
+                  }
+                  alt={item.label}
+                  width={20}
+                  height={20}
+                  className="w-5 h-5"
+                  onMouseEnter={(e) => {
+                    if (
+                      pathname !== item.href &&
+                      !pathname.startsWith(item.href)
+                    ) {
+                      e.currentTarget.src = item.iconActive;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (
+                      pathname !== item.href &&
+                      !pathname.startsWith(item.href)
+                    ) {
+                      e.currentTarget.src = item.icon;
+                    }
+                  }}
+                />
+                <span>{item.label}</span>
+              </Link>
+            )
+        )}
+      </nav>
+      <div className="absolute bottom-4 w-full px-4">
+        {isAuthenticated ? (
+          <div className="flex-column items-center justify-between">
+            <button
+              onClick={() => {
+                clearAuth();
+                window.location.href = "/login";
+              }}
+              className="text-sm hover:underline"
+            >
+              Выйти из аккаунта
+            </button>
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className="block p-2 hover:bg-cyan-50 hover:text-cyan-700 rounded-md"
+          >
+            Войти
+          </Link>
+        )}
+      </div>
+    </aside>
+  );
+}

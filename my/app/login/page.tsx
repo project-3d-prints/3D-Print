@@ -1,71 +1,85 @@
 "use client";
-import { useState } from "react";
-import { login, getCurrentUser } from "../../lib/api";
-import { useAuthStore } from "../../lib/store";
-import { useRouter } from "next/navigation";
 
-interface LoginState {
-  username: string;
-  password: string;
-  error: string;
-}
+import { useState } from "react";
+import { login } from "../../lib/api";
+import { useAuthStore } from "../../lib/store";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function Login() {
-  const [state, setState] = useState<LoginState>({
-    username: "",
-    password: "",
-    error: "",
-  });
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const { setAuth } = useAuthStore();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login(state.username, state.password);
-      const userResponse = await getCurrentUser();
-      setAuth(userResponse.data);
-      router.push("/jobs");
-    } catch (err: any) {
-      setState({
-        ...state,
-        error: err.response?.data?.detail || "Login failed",
-      });
+      const response = await login(username, password);
+      setAuth({ ...response.data, role: response.data.role });
+      toast.success("Вы вошли в аккаунт!");
+      router.push("/");
+    } catch (error: any) {
+      console.error("Error logging in:", error.message);
+      toast.error("Failed to login");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Login</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Username"
-          value={state.username}
-          onChange={(e) => setState({ ...state, username: e.target.value })}
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={state.password}
-          onChange={(e) => setState({ ...state, password: e.target.value })}
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        {state.error && <p className="text-red-500 text-sm">{state.error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition"
-        >
-          Login
-        </button>
-      </form>
-      <p className="mt-4 text-gray-600">
-        Don&apos;t have an account?{" "}
-        <a href="/register" className="text-blue-500 hover:underline">
-          Register
-        </a>
-      </p>
+    <div className="container mx-auto p-4 flex items-center justify-center min-h-screen">
+      <div className="bg-white p-6 rounded-md shadow-md max-w-md w-full">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Авторизация</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Имя пользователя
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-600 focus:border-blue-600"
+              placeholder="e.g., john_doe"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Пароль
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-600 focus:border-blue-600"
+              required
+            />
+          </div>
+          <div className="flex justify-end space-x-4">
+            <Link
+              href="/register"
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Нет аккаунта? Зарегистрироваться
+            </Link>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700"
+            >
+              Войти
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

@@ -1,42 +1,70 @@
 "use client";
+
 import { useState, useEffect } from "react";
-import { getMaterials, Material } from "../../lib/api";
-import { useAuthStore } from "../../lib/store";
-import { useRouter } from "next/navigation";
+import { getMaterials } from "../../lib/api";
 import Link from "next/link";
 
-export default function MaterialList() {
-  const { isAuthenticated } = useAuthStore();
-  const router = useRouter();
+interface Material {
+  id: number;
+  name: string;
+  printer: string;
+  quantity_printer: number;
+  quantity_storage: number;
+}
+
+export default function ListMaterials() {
   const [materials, setMaterials] = useState<Material[]>([]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
+    async function fetchMaterials() {
+      try {
+        const response = await getMaterials();
+        setMaterials(response.data);
+      } catch (err) {
+        console.error("Error fetching materials:", err);
+      }
     }
-    getMaterials()
-      .then((res) => setMaterials(res.data))
-      .catch((err) => console.error(err));
-  }, [isAuthenticated, router]);
+    fetchMaterials();
+  }, []);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Materials</h2>
-      <ul className="space-y-2">
-        {materials.map((material) => (
-          <li key={material.id} className="p-2 border rounded bg-gray-50">
-            Material #{material.id}: {material.name}, Quantity:{" "}
-            {material.quantity}g (Printer #{material.printer_id})
-            <Link
-              href={`/materials/update/${material.id}`}
-              className="ml-2 text-blue-500 hover:underline"
-            >
-              Update
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-cyan-700 mb-6">
+        Список материалов
+      </h1>
+      <div className="bg-white p-6 rounded-md shadow-md">
+        <table className="w-full table-auto">
+          <thead>
+            <tr className="bg-gray-200 text-cyan-700">
+              <th className="p-2">ID</th>
+              <th className="p-2">Название</th>
+              <th className="p-2">Принтер</th>
+              <th className="p-2">В принтере</th>
+              <th className="p-2">На складе</th>
+              <th className="p-2">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {materials.map((material) => (
+              <tr key={material.id} className="border-b">
+                <td className="p-2">{material.id}</td>
+                <td className="p-2">{material.name}</td>
+                <td className="p-2">{material.printer}</td>
+                <td className="p-2">{material.quantity_printer}</td>
+                <td className="p-2">{material.quantity_storage}</td>
+                <td className="p-2">
+                  <Link
+                    href={`/materials/${material.id}/edit`}
+                    className="text-cyan-600 hover:text-cyan-700"
+                  >
+                    Редактировать
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

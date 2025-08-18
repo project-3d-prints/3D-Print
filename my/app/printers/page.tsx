@@ -1,44 +1,48 @@
 "use client";
-import { useState, useEffect } from "react";
-import { getPrinters, Printer } from "../../lib/api";
-import { useAuthStore } from "../../lib/store";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
-export default function PrinterList() {
-  const { isAuthenticated, user } = useAuthStore();
-  const router = useRouter();
-  const [printers, setPrinters] = useState<Printer[]>([]);
+import { useState, useEffect } from "react";
+import { getPrinters } from "../../lib/api";
+
+export default function ListPrinters() {
+  const [printers, setPrinters] = useState([]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
+    async function fetchPrinters() {
+      try {
+        const response = await getPrinters();
+        setPrinters(response.data);
+      } catch (err) {
+        console.error("Error fetching printers:", err);
+      }
     }
-    getPrinters()
-      .then((res) => setPrinters(res.data))
-      .catch((err) => console.error(err));
-  }, [isAuthenticated, router]);
+    fetchPrinters();
+  }, []);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Printers</h2>
-      {user?.role === "lab_head" && (
-        <Link
-          href="/printers/create"
-          className="inline-block mb-4 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition"
-        >
-          Add Printer
-        </Link>
-      )}
-      <ul className="space-y-2">
-        {printers.map((printer) => (
-          <li key={printer.id} className="p-2 border rounded bg-gray-50">
-            Printer #{printer.id}: {printer.name} (Created by {printer.username}
-            )
-          </li>
-        ))}
-      </ul>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-cyan-700 mb-6">
+        Список принтеров
+      </h1>
+      <div className="bg-white p-6 rounded-md shadow-md">
+        <table className="w-full table-auto">
+          <thead>
+            <tr className="bg-gray-200 text-cyan-700">
+              <th className="p-2">ID</th>
+              <th className="p-2">Название</th>
+              <th className="p-2">Владелец</th>
+            </tr>
+          </thead>
+          <tbody>
+            {printers.map((printer: any) => (
+              <tr key={printer.id} className="border-b">
+                <td className="p-2">{printer.id}</td>
+                <td className="p-2">{printer.name}</td>
+                <td className="p-2">{printer.owner}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
