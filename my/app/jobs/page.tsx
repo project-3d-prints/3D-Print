@@ -1,81 +1,84 @@
 "use client";
-import { useState, useEffect } from "react";
-import { getQueue, getPrinters, Printer, Job } from "../../lib/api";
-import { useAuthStore } from "../../lib/store";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
-export default function JobList() {
-  const { isAuthenticated } = useAuthStore();
-  const router = useRouter();
+import { useState, useEffect } from "react";
+import { getQueue } from "../../lib/api";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+
+interface Job {
+  id: number;
+  printer_id: number;
+  duration: number;
+  deadline: string;
+  material_amount: number;
+  user: string;
+  date: string;
+  material: string;
+  priority: number;
+}
+
+export default function JobsList() {
+  const params = useParams();
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [printers, setPrinters] = useState<Printer[]>([]);
-  const [selectedPrinter, setSelectedPrinter] = useState("");
-  const [day, setDay] = useState("");
+  const [day, setDay] = useState<string>(
+    Array.isArray(params.day) ? params.day[0] || "" : params.day || ""
+  ); // Обработка string | string[]
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
+    async function fetchJobs() {
+      try {
+        const printerId = Number(params.printerId) || 0; // Предполагаем, что есть printerId
+        const response = await getQueue(printerId, day);
+        setJobs(response.data);
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+      }
     }
-    getPrinters()
-      .then((res) => setPrinters(res.data))
-      .catch((err) => console.error(err));
-  }, [isAuthenticated, router]);
-
-  const loadQueue = async () => {
-    if (!selectedPrinter) return;
-    try {
-      const res = await getQueue(Number(selectedPrinter), day || null);
-      setJobs(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    fetchJobs();
+  }, [params.printerId, day]);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Job Queue</h2>
-      <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
-        <select
-          value={selectedPrinter}
-          onChange={(e) => setSelectedPrinter(e.target.value)}
-          className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Select Printer</option>
-          {printers.map((printer) => (
-            <option key={printer.id} value={printer.id}>
-              {printer.name}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={day}
-          onChange={(e) => setDay(e.target.value)}
-          className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          onClick={loadQueue}
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition"
-        >
-          Load Queue
-        </button>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Список заявок</h1>
+      <div className="bg-white p-6 rounded-md shadow-md">
+        <div className="mb-4">
+          <label
+            htmlFor="day"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Дата
+          </label>
+          <input
+            id="day"
+            type="date"
+            value={day}
+            onChange={(e) => setDay(e.target.value)}
+            className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+          />
+        </div>
+        <table className="w-full table-auto">
+          <thead>
+            <tr className="bg-gray-200 text-gray-700">
+              <th className="p-2">ID</th>
+              <th className="p-2">Принтер</th>
+              <th className="p-2">Длительность</th>
+              <th className="p-2">Крайний срок</th>
+              <th className="p-2">Материал</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jobs.map((job) => (
+              <tr key={job.id} className="border-b">
+                <td className="p-2">{job.id}</td>
+                <td className="p-2">{job.printer_id}</td>
+                <td className="p-2">{job.duration}</td>
+                <td className="p-2">{job.deadline}</td>
+                <td className="p-2">{job.material}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <Link
-        href="/jobs/create"
-        className="inline-block mb-4 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition"
-      >
-        Create Job
-      </Link>
-      <ul className="space-y-2">
-        {jobs.map((job) => (
-          <li key={job.id} className="p-2 border rounded bg-gray-50">
-            Job #{job.id}: Printer {job.printer_id}, Duration: {job.duration}h,
-            Deadline: {job.deadline}, Material: {job.material_amount}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

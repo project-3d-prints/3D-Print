@@ -17,8 +17,9 @@ export default function Login() {
     e.preventDefault();
     try {
       const response = await login(username, password);
+      localStorage.setItem("authToken", response.data.token); // Сохраняем токен
       setAuth({ ...response.data, role: response.data.role });
-      toast.success("Вы вошли в аккаунт!");
+      toast.success("Logged in successfully!");
       router.push("/");
     } catch (error: any) {
       console.error("Error logging in:", error.message);
@@ -43,7 +44,7 @@ export default function Login() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-600 focus:border-blue-600"
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               placeholder="e.g., john_doe"
               required
             />
@@ -60,7 +61,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-600 focus:border-blue-600"
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               required
             />
           </div>

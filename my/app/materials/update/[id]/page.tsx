@@ -1,77 +1,95 @@
 "use client";
-import { useState, useEffect } from "react";
-import { updateMaterial, getMaterials, Material } from "../../../../lib/api";
-import { useAuthStore } from "../../../../lib/store";
-import { useRouter, useParams } from "next/navigation";
 
-interface MaterialFormState {
-  quantity: string;
-  error: string;
-}
+import { useState, useEffect } from "react";
+import { updateMaterial, getMaterial } from "../../../../lib/api";
+import toast from "react-hot-toast";
+import { useParams } from "next/navigation";
 
 export default function UpdateMaterial() {
-  const { isAuthenticated } = useAuthStore();
-  const router = useRouter();
   const params = useParams();
-  const [state, setState] = useState<MaterialFormState>({
-    quantity: "",
-    error: "",
-  });
-  const [material, setMaterial] = useState<Material | null>(null);
+  const id = Number(params.id); // Преобразование в number
+  const [quantityPrinter, setQuantityPrinter] = useState(0);
+  const [quantityStorage, setQuantityStorage] = useState(0);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
+    async function fetchMaterial() {
+      try {
+        const response = await getMaterial(id);
+        setQuantityPrinter(response.data.quantity_printer);
+        setQuantityStorage(response.data.quantity_storage);
+      } catch (error) {
+        console.error("Error fetching material:", error);
+        toast.error("Failed to fetch material");
+      }
     }
-    getMaterials()
-      .then((res) => {
-        const mat = res.data.find((m) => m.id === Number(params.id));
-        if (mat) {
-          setMaterial(mat);
-          setState({ ...state, quantity: mat.quantity.toString() });
-        }
-      })
-      .catch((err) => console.error(err));
-  }, [isAuthenticated, params.id, router]);
+    fetchMaterial();
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateMaterial(Number(params.id), Number(state.quantity));
-      router.push("/materials");
-    } catch (err: any) {
-      setState({
-        ...state,
-        error: err.response?.data?.detail || "Failed to update material",
-      });
+      await updateMaterial(id, {
+        quantity_printer: quantityPrinter,
+        quantity_storage: quantityStorage,
+      }); // Объект, а не число
+      toast.success("Material updated successfully!");
+    } catch (error) {
+      console.error("Error updating material:", error);
+      toast.error("Failed to update material");
     }
   };
 
-  if (!material) return <div className="text-center p-6">Loading...</div>;
-
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">
-        Update Material: {material.name}
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="number"
-          placeholder="Quantity (g)"
-          value={state.quantity}
-          onChange={(e) => setState({ ...state, quantity: e.target.value })}
-          step="0.1"
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        {state.error && <p className="text-red-500 text-sm">{state.error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition"
-        >
-          Update Material
-        </button>
-      </form>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">
+        Редактирование материала
+      </h1>
+      <div className="bg-white p-6 rounded-md shadow-md max-w-lg mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="quantityPrinter"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Количество в принтере
+            </label>
+            <input
+              id="quantityPrinter"
+              type="number"
+              value={quantityPrinter}
+              onChange={(e) => setQuantityPrinter(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-600 focus:border-blue-600"
+              min="0"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="quantityStorage"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Количество на складе
+            </label>
+            <input
+              id="quantityStorage"
+              type="number"
+              value={quantityStorage}
+              onChange={(e) => setQuantityStorage(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-600 focus:border-blue-600"
+              min="0"
+              required
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Сохранить
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

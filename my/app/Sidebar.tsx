@@ -57,60 +57,39 @@ export default function Sidebar() {
   return (
     <aside className="fixed top-0 left-0 h-screen w-64 bg-cyan-700 text-cyan-50 p-4">
       <div className="mb-8">
-        <h1 className="text-xl font-bold">ЗD Print</h1>
+        <h1 className="text-xl font-bold">3D Print</h1>
       </div>
       <nav className="space-y-2">
-        {navItems.map(
-          (item) =>
-            isAuthenticated && (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center space-x-2 p-2 rounded-md transition-colors duration-200 hover:bg-cyan-50 hover:text-cyan-700 ${
-                  pathname === item.href ? "bg-cyan-50 text-cyan-700" : ""
-                }`}
-              >
-                <Image
-                  src={
-                    pathname === item.href || pathname.startsWith(item.href)
-                      ? item.iconActive
-                      : item.icon
-                  }
-                  alt={item.label}
-                  width={20}
-                  height={20}
-                  className="w-5 h-5"
-                  onMouseEnter={(e) => {
-                    if (
-                      pathname !== item.href &&
-                      !pathname.startsWith(item.href)
-                    ) {
-                      e.currentTarget.src = item.iconActive;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (
-                      pathname !== item.href &&
-                      !pathname.startsWith(item.href)
-                    ) {
-                      e.currentTarget.src = item.icon;
-                    }
-                  }}
-                />
-                <span>{item.label}</span>
-              </Link>
-            )
-        )}
+        {isAuthenticated &&
+          navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center space-x-2 p-2 rounded-md transition-colors duration-200 hover:bg-cyan-50 hover:text-cyan-700 ${
+                pathname === item.href ? "bg-cyan-50 text-cyan-700" : ""
+              }`}
+            >
+              <Image
+                src={pathname === item.href ? item.iconActive : item.icon}
+                alt={item.label}
+                width={20}
+                height={20}
+                className="w-5 h-5"
+              />
+              <span>{item.label}</span>
+            </Link>
+          ))}
       </nav>
       <div className="absolute bottom-4 w-full px-4">
         {isAuthenticated ? (
-          <div className="flex-column items-center justify-between">
+          <div className="flex flex-col items-center justify-between">
+            <span className="mb-2">{user?.username}</span>
             <button
               onClick={() => {
                 clearAuth();
                 window.location.href = "/login";
               }}
-              className="text-sm hover:underline"
+              className="text-sm hover:underline w-full text-center"
             >
               Выйти из аккаунта
             </button>
@@ -118,7 +97,7 @@ export default function Sidebar() {
         ) : (
           <Link
             href="/login"
-            className="block p-2 hover:bg-cyan-50 hover:text-cyan-700 rounded-md"
+            className="block p-2 hover:bg-cyan-50 hover:text-cyan-700 rounded-md text-center"
           >
             Войти
           </Link>

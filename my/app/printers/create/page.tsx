@@ -3,27 +3,33 @@
 import { useState } from "react";
 import { createPrinter } from "../../../lib/api";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "../../../lib/store";
 
-export default function AddPrinter() {
+export default function CreatePrinter() {
   const [name, setName] = useState("");
+  const router = useRouter();
+  const { user } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user || user.role !== "глава лаборатории") {
+      toast.error("Только глава лаборатории может добавлять принтеры!");
+      return;
+    }
     try {
-      await createPrinter(name);
+      await createPrinter({ name, status: "active", owner: user.username });
       toast.success("Принтер успешно добавлен!");
-      setName("");
+      router.push("/printers");
     } catch (error) {
-      console.error("Error adding printer:", error);
-      toast.error("Failed to add printer");
+      console.error("Error creating printer:", error);
+      toast.error("Не удалось добавить принтер");
     }
   };
 
-  
-
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-cyan-700 mb-6">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">
         Добавить принтер
       </h1>
       <div className="bg-white p-6 rounded-md shadow-md max-w-lg mx-auto">
@@ -31,7 +37,7 @@ export default function AddPrinter() {
           <div>
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-cyan-700"
+              className="block text-sm font-medium text-gray-700"
             >
               Название принтера
             </label>
@@ -40,7 +46,7 @@ export default function AddPrinter() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cayn-700 focus:border-cayn-600"
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
               placeholder="e.g., Ender 3"
               required
             />
@@ -48,9 +54,9 @@ export default function AddPrinter() {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-cyan-700"
+              className="px-4 py-2 bg-cyan-700 text-white rounded-md hover:bg-cyan-800"
             >
-              Сохранить
+              Добавить
             </button>
           </div>
         </form>

@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 
 export default function EditMaterial() {
   const params = useParams();
-  const id = params.id as string;
+  const id = Number(params.id);
   const [quantityPrinter, setQuantityPrinter] = useState(0);
   const [quantityStorage, setQuantityStorage] = useState(0);
 
@@ -58,7 +58,7 @@ export default function EditMaterial() {
               type="number"
               value={quantityPrinter}
               onChange={(e) => setQuantityPrinter(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-600 focus:border-blue-600"
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               min="0"
               required
             />
@@ -75,7 +75,7 @@ export default function EditMaterial() {
               type="number"
               value={quantityStorage}
               onChange={(e) => setQuantityStorage(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-600 focus:border-blue-600"
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               min="0"
               required
             />
@@ -83,7 +83,7 @@ export default function EditMaterial() {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-cyan-700 text-white rounded-md hover:bg-cyan-700"
             >
               Сохранить
             </button>
