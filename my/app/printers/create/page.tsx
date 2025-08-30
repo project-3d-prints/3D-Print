@@ -29,7 +29,7 @@ export default function CreatePrinter() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
+      <h1 className="text-3xl font-bold text-cyan-800 mb-6">
         Добавить принтер
       </h1>
       <div className="bg-white p-6 rounded-md shadow-md max-w-lg mx-auto">
@@ -37,7 +37,7 @@ export default function CreatePrinter() {
           <div>
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Название принтера
             </label>
@@ -47,7 +47,7 @@ export default function CreatePrinter() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
-              placeholder="e.g., Ender 3"
+              placeholder="Введите название принтера"
               required
             />
           </div>

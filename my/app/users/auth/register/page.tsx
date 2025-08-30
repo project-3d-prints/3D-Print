@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { register } from "../../lib/api";
+import { register } from "../../../../lib/api";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -14,7 +14,7 @@ export default function Register() {
     e.preventDefault();
     if (!username || !password || password.length < 6) {
       toast.error(
-        "Please fill all fields and use a password with at least 6 characters."
+        "Пожалуйста, введите имя пользователя и пароль (минимум 6 символов)"
       );
       return;
     }
@@ -26,14 +26,14 @@ export default function Register() {
       window.location.href = "/login";
     } catch (error: any) {
       console.error("Ошибка регистрации:", error.message);
-      toast.error(`Failed to register: ${error.message}`);
+      toast.error(`Ошибка регистрации: ${error.message}`);
     }
   };
 
   return (
     <div className="container mx-auto p-4 flex items-center justify-center min-h-screen">
       <div className="bg-white p-6 rounded-md shadow-md max-w-md w-full">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Регистрация</h1>
+        <h1 className="text-3xl font-bold text-cyan-800 mb-6">Регистрация</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -89,7 +89,7 @@ export default function Register() {
           </div>
           <div className="flex justify-end space-x-4">
             <Link
-              href="/login"
+              href="/users/auth/login"
               className="px-4 py-2 text-gray-600 hover:text-gray-800"
             >
               Уже есть аккаунт? Войти

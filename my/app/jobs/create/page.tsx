@@ -1,147 +1,235 @@
 "use client";
 
-import { useState } from "react";
-import { createJob } from "../../../lib/api";
+import { useState, useEffect } from "react";
+import { createJob, getMaterials, getPrinters } from "../../../lib/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../../lib/store";
 
+interface Material {
+  id: number;
+  name: string;
+  printer_id: number;
+  quantity_printer: number;
+  quantity_storage: number;
+}
+
+interface Printer {
+  id: number;
+  name: string;
+  status: string;
+  owner: string;
+}
+
 export default function CreateJob() {
-  const [printerId, setPrinterId] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [deadline, setDeadline] = useState("");
-  const [materialAmount, setMaterialAmount] = useState(0);
-  const [material, setMaterial] = useState("");
-  const [priority, setPriority] = useState(1);
   const router = useRouter();
   const { user } = useAuthStore();
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [printers, setPrinters] = useState<Printer[]>([]);
+  const [formData, setFormData] = useState({
+    printer_id: 0,
+    duration: 0,
+    deadline: "",
+    material_amount: 0,
+    material: "",
+    priority: 0,
+  });
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const materialsResponse = await getMaterials();
+        setMaterials(materialsResponse.data);
+        const printersResponse = await getPrinters();
+        setPrinters(printersResponse.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Не удалось загрузить данные");
+      }
+    }
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      let priority = 3;
+      if (user.role === "глава лаборатории") priority = 1;
+      else if (user.role === "учитель") priority = 2;
+      setFormData((prev) => ({ ...prev, priority }));
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      toast.error("Пожалуйста, войдите в систему!");
+    const selectedMaterial = materials.find(
+      (m) => m.name === formData.material
+    );
+    if (!selectedMaterial) {
+      toast.error("Выбран материал, которого нет в списке!");
       return;
     }
+    if (
+      selectedMaterial.quantity_printer < formData.material_amount &&
+      selectedMaterial.quantity_storage < formData.material_amount
+    ) {
+      toast.error("Недостаточно материала на принтере или складе!");
+      return;
+    }
+
     try {
-      const newJob = {
-        printer_id: printerId,
-        duration,
-        deadline,
-        material_amount: materialAmount,
-        user: user.username,
-        material,
-        priority,
-        date: new Date().toISOString().split("T")[0], // Добавляем дату
-      };
-      await createJob(newJob);
+      await createJob({
+        ...formData,
+        user: user?.username || "unknown",
+        date: new Date().toISOString().split("T")[0],
+      });
       toast.success("Заявка успешно создана!");
-      router.push("/jobs/queue");
+      router.push("/jobs");
     } catch (error) {
       console.error("Error creating job:", error);
       toast.error("Не удалось создать заявку");
     }
   };
 
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    if (
+      (name === "material_amount" ||
+        name === "duration" ||
+        name === "printer_id") &&
+      value !== "" &&
+      isNaN(Number(value))
+    ) {
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "material_amount" ||
+        name === "duration" ||
+        name === "printer_id"
+          ? Number(value) || 0
+          : value,
+    }));
+  };
+
+  const getDisplayName = (
+    name: string,
+    id: number,
+    items: { id: number; name: string }[]
+  ) => {
+    const nameCount = items.filter((item) => item.name === name).length;
+    if (nameCount > 1) {
+      const idCount = items.filter(
+        (item) => item.name === name && item.id <= id
+      ).length;
+      return `${name} ${idCount}`;
+    }
+    return name;
+  };
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Создать заявку</h1>
+      <h1 className="text-3xl font-bold text-cyan-800 mb-6">Создание заявки</h1>
       <div className="bg-white p-6 rounded-md shadow-md max-w-lg mx-auto">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
-              htmlFor="printerId"
-              className="block text-sm font-medium text-gray-700"
+              htmlFor="printer_id"
+              className="block text-sm font-medium text-cyan-700"
             >
-              ID принтера
+              Принтер
             </label>
-            <input
-              id="printerId"
-              type="number"
-              value={printerId}
-              onChange={(e) => setPrinterId(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+            <select
+              id="printer_id"
+              name="printer_id"
+              value={formData.printer_id}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               required
-            />
+            >
+              <option value={0}>Выберите принтер</option>
+              {printers.map((printer) => (
+                <option key={printer.id} value={printer.id}>
+                  {getDisplayName(printer.name, printer.id, printers)}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label
               htmlFor="duration"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Длительность (часы)
             </label>
             <input
               id="duration"
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+              type="text"
+              name="duration"
+              value={formData.duration}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
+              min="0"
               required
             />
           </div>
           <div>
             <label
               htmlFor="deadline"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Крайний срок
             </label>
             <input
               id="deadline"
               type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
-              required
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="materialAmount"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Количество материала
-            </label>
-            <input
-              id="materialAmount"
-              type="number"
-              value={materialAmount}
-              onChange={(e) => setMaterialAmount(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+              name="deadline"
+              value={formData.deadline}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               required
             />
           </div>
           <div>
             <label
               htmlFor="material"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Материал
             </label>
-            <input
+            <select
               id="material"
-              type="text"
-              value={material}
-              onChange={(e) => setMaterial(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+              name="material"
+              value={formData.material}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               required
-            />
+            >
+              <option value="">Выберите материал</option>
+              {materials.map((material) => (
+                <option key={material.id} value={material.name}>
+                  {getDisplayName(material.name, material.id, materials)}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label
-              htmlFor="priority"
-              className="block text-sm font-medium text-gray-700"
+              htmlFor="material_amount"
+              className="block text-sm font-medium text-cyan-700"
             >
-              Приоритет
+              Количество материала
             </label>
             <input
-              id="priority"
-              type="number"
-              value={priority}
-              onChange={(e) => setPriority(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
-              min="1"
-              max="5"
+              id="material_amount"
+              type="text"
+              name="material_amount"
+              value={formData.material_amount}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
+              min="0"
               required
             />
           </div>

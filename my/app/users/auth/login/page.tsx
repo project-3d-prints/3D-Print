@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { login } from "../../lib/api";
-import { useAuthStore } from "../../lib/store";
+import { login } from "../../../../lib/api";
+import { useAuthStore } from "../../../../lib/store";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -17,25 +17,25 @@ export default function Login() {
     e.preventDefault();
     try {
       const response = await login(username, password);
-      localStorage.setItem("authToken", response.data.token); // Сохраняем токен
+      localStorage.setItem("authToken", response.data.token);
       setAuth({ ...response.data, role: response.data.role });
-      toast.success("Logged in successfully!");
-      router.push("/");
+      toast.success("Регистрация успешна!");
+      router.push("/dashboard");
     } catch (error: any) {
       console.error("Error logging in:", error.message);
-      toast.error("Failed to login");
+      toast.error("Не удалось войти в аккаунт" + error.message);
     }
   };
 
   return (
     <div className="container mx-auto p-4 flex items-center justify-center min-h-screen">
       <div className="bg-white p-6 rounded-md shadow-md max-w-md w-full">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Авторизация</h1>
+        <h1 className="text-3xl font-bold text-cyan-800 mb-6">Авторизация</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="username"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Имя пользователя
             </label>
@@ -52,7 +52,7 @@ export default function Login() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Пароль
             </label>
@@ -67,8 +67,8 @@ export default function Login() {
           </div>
           <div className="flex justify-end space-x-4">
             <Link
-              href="/register"
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              href="/users/auth/register"
+              className="px-4 py-2 text-cyan-600 hover:text-cyan-800"
             >
               Нет аккаунта? Зарегистрироваться
             </Link>

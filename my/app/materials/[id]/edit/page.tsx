@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { updateMaterial, getMaterial } from "../../../../lib/api";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 
 export default function EditMaterial() {
   const params = useParams();
   const id = Number(params.id);
+  const router = useRouter();
   const [quantityPrinter, setQuantityPrinter] = useState(0);
   const [quantityStorage, setQuantityStorage] = useState(0);
 
@@ -19,7 +21,7 @@ export default function EditMaterial() {
         setQuantityStorage(response.data.quantity_storage);
       } catch (error) {
         console.error("Error fetching material:", error);
-        toast.error("Failed to fetch material");
+        toast.error("Не удалось найти материал");
       }
     }
     fetchMaterial();
@@ -32,16 +34,21 @@ export default function EditMaterial() {
         quantity_printer: quantityPrinter,
         quantity_storage: quantityStorage,
       });
-      toast.success("Material updated successfully!");
+      toast.success("Материал успешно обновлен!");
+      router.push("/materials");
     } catch (error) {
       console.error("Error updating material:", error);
-      toast.error("Failed to update material");
+      toast.error("Не удалось обновить материал");
     }
+  };
+
+  const handleBack = () => {
+    router.push("/materials");
   };
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
+      <h1 className="text-3xl font-bold text-cyan-800 mb-6">
         Редактирование материала
       </h1>
       <div className="bg-white p-6 rounded-md shadow-md max-w-lg mx-auto">
@@ -49,13 +56,13 @@ export default function EditMaterial() {
           <div>
             <label
               htmlFor="quantityPrinter"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Количество в принтере
             </label>
             <input
               id="quantityPrinter"
-              type="number"
+              type="text"
               value={quantityPrinter}
               onChange={(e) => setQuantityPrinter(Number(e.target.value))}
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
@@ -66,13 +73,13 @@ export default function EditMaterial() {
           <div>
             <label
               htmlFor="quantityStorage"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Количество на складе
             </label>
             <input
               id="quantityStorage"
-              type="number"
+              type="text"
               value={quantityStorage}
               onChange={(e) => setQuantityStorage(Number(e.target.value))}
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
@@ -80,10 +87,17 @@ export default function EditMaterial() {
               required
             />
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-around">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="px-4 py-2 bg-white text-cyan-700 rounded-md hover:bg-cyan-100"
+            >
+              Назад
+            </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-cyan-700 text-white rounded-md hover:bg-cyan-700"
+              className="px-4 py-2 bg-cyan-700 text-white rounded-md hover:bg-cyan-800"
             >
               Сохранить
             </button>

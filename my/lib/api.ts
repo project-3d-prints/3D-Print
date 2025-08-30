@@ -75,11 +75,23 @@ export const createPrinter = async (printer: {
 };
 
 export const getQueue = async (printerId: number, day: string) => {
-  const jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
+  // Проверяем, есть ли данные в localStorage, и инициализируем, если нет
+  let jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
+  if (!Array.isArray(jobs)) {
+    jobs = [];
+    localStorage.setItem("jobs", JSON.stringify(jobs));
+  }
+
+  const filteredJobs =
+    printerId === 0
+      ? jobs
+      : jobs.filter(
+          (j: Job) =>
+            j.printer_id === printerId && (!day || j.date.includes(day))
+        );
+
   return {
-    data: jobs.filter(
-      (j: Job) => j.printer_id === printerId && (!day || j.date.includes(day))
-    ),
+    data: filteredJobs,
   };
 };
 
