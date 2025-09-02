@@ -17,13 +17,17 @@ export default function Login() {
     e.preventDefault();
     try {
       const response = await login(username, password);
-      localStorage.setItem("authToken", response.data.token);
-      setAuth({ ...response.data, role: response.data.role });
-      toast.success("Регистрация успешна!");
-      router.push("/dashboard");
+      console.log("Login response:", response); // Для отладки
+      if (response.token && response.role) {
+        setAuth({ token: response.token, role: response.role, username }); // Передаём введённый username
+        toast.success("Вход выполнен!");
+        router.push("/dashboard");
+      } else {
+        toast.error("Неожиданный ответ сервера");
+      }
     } catch (error: any) {
       console.error("Error logging in:", error.message);
-      toast.error("Не удалось войти в аккаунт" + error.message);
+      toast.error("Не удалось войти в аккаунт: " + error.message);
     }
   };
 

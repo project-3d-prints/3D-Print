@@ -1,32 +1,23 @@
-// lib/store.ts
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-
-interface User {
-  id: number;
-  username: string;
-  role: string;
-  password: string;
-}
 
 interface AuthState {
+  user: { username: string; role: string; token?: string } | null;
   isAuthenticated: boolean;
-  user: User | null;
-  setAuth: (user: User) => void;
+  setUser: (
+    user: { username: string; role: string; token?: string } | null
+  ) => void;
+  setAuth: (auth: { token: string; role: string; username: string }) => void;
   clearAuth: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      isAuthenticated: false,
-      user: null,
-      setAuth: (user: User) => set({ isAuthenticated: true, user }),
-      clearAuth: () => set({ isAuthenticated: false, user: null }),
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  setAuth: (auth) =>
+    set({
+      isAuthenticated: true,
+      user: { username: auth.username, role: auth.role, token: auth.token },
     }),
-    {
-      name: "auth-storage", // Ключ для localStorage
-      storage: createJSONStorage(() => localStorage), // Используем localStorage
-    }
-  )
-);
+  clearAuth: () => set({ user: null, isAuthenticated: false }),
+}));

@@ -23,7 +23,7 @@ export default function Register() {
       const response = await register({ username, role, password });
       console.log("Registration response:", response);
       toast.success("Регистрация прошла успешно!");
-      window.location.href = "/login";
+      window.location.href = "/users/auth/login";
     } catch (error: any) {
       console.error("Ошибка регистрации:", error.message);
       toast.error(`Ошибка регистрации: ${error.message}`);
@@ -90,7 +90,7 @@ export default function Register() {
           <div className="flex justify-end space-x-4">
             <Link
               href="/users/auth/login"
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="px-4 py-2 text-cyan-600 hover:text-cyan-800"
             >
               Уже есть аккаунт? Войти
             </Link>

@@ -11,7 +11,7 @@ export interface Printer {
   id: number;
   name: string;
   status: string;
-  owner: string; // Добавлено поле owner
+  owner: string;
 }
 
 export interface Job {
@@ -75,24 +75,15 @@ export const createPrinter = async (printer: {
 };
 
 export const getQueue = async (printerId: number, day: string) => {
-  // Проверяем, есть ли данные в localStorage, и инициализируем, если нет
-  let jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
-  if (!Array.isArray(jobs)) {
-    jobs = [];
-    localStorage.setItem("jobs", JSON.stringify(jobs));
-  }
-
-  const filteredJobs =
-    printerId === 0
-      ? jobs
-      : jobs.filter(
-          (j: Job) =>
-            j.printer_id === printerId && (!day || j.date.includes(day))
-        );
-
-  return {
-    data: filteredJobs,
-  };
+  const url = `/jobs/queue/${printerId}${day ? `?day=${day}` : ""}`;
+  const response = await fetch(`http://localhost:8000${url}`, {
+    method: "GET",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok)
+    throw new Error((await response.text()) || "Failed to fetch queue");
+  return response.json();
 };
 
 export const createJob = async (job: Omit<Job, "id">) => {
@@ -112,23 +103,32 @@ export const register = async (data: {
   role: string;
   password: string;
 }) => {
-  const users = JSON.parse(localStorage.getItem("users") || "[]");
-  if (users.find((u: any) => u.username === data.username)) {
-    throw new Error("Username already exists");
+  const response = await fetch("http://localhost:8000/users/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "Регистрация не удалась");
   }
-  const newUser = { id: users.length + 1, ...data };
-  users.push(newUser);
-  localStorage.setItem("users", JSON.stringify(users));
-  return { data: newUser };
+  return response.json();
 };
 
 export const login = async (username: string, password: string) => {
-  const users = JSON.parse(localStorage.getItem("users") || "[]");
-  const user = users.find(
-    (u: any) => u.username === username && u.password === password
-  );
-  if (!user) {
-    throw new Error("Invalid username or password");
+  const formData = new URLSearchParams();
+  formData.append("username", username);
+  formData.append("password", password);
+
+  const response = await fetch("http://localhost:8000/users/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: formData.toString(),
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(JSON.stringify(errorData) || "Login failed");
   }
-  return { data: user };
+  return response.json();
 };
