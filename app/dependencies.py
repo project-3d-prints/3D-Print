@@ -62,7 +62,7 @@ async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends
         )
 
 async def close_redis():#Закрывает соединение с Redis при завершении приложения.
-    await redis_client.aclose()
+    await redis_client.close()
 
 #Каждый защищенный маршрут (например, /jobs) требует cookie session_id.
 #После логина фронтенд должен сохранять session_id и отправлять его в запросах.

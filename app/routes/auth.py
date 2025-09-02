@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_db
 from models.user import User, UserRole
-from schemas.user import UserCreate, UserOut, LoginRequest
+from schemas.user import UserCreate, UserOut
 from passlib.context import CryptContext
 from jwt import encode
 from datetime import datetime, timedelta
@@ -26,7 +26,7 @@ async def get_user_by_username(db: AsyncSession, username: str):
     result = await db.execute(select(User).where(User.username == username))
     return result.scalar_one_or_none()
 
-@router.post("/register", response_model=UserOut)#Регистрация пользователя (принимает username, password, role).
+@router.post("/register", response_model=UserOut)  # Регистрация пользователя (принимает username, password, role).
 async def register_user(
     user: UserCreate,
     db: Annotated[AsyncSession, Depends(get_db)]
@@ -41,14 +41,15 @@ async def register_user(
     await db.refresh(db_user)
     return db_user
 
-@router.post("/login")#Логин (устанавливает cookie session_id с JWT-токеном).
+@router.post("/login")  # Логин (устанавливает cookie session_id с JWT-токеном).
 async def login(
-    form_data: Annotated[LoginRequest, Depends()],
+    username: Annotated[str, Form(...)],  # Явно указываем, что ждём данные формы
+    password: Annotated[str, Form(...)],
     db: Annotated[AsyncSession, Depends(get_db)],
     response: Response
 ) -> dict:
-    user = await get_user_by_username(db, form_data.username)
-    if not user or not verify_password(form_data.password, user.hash_pass):
+    user = await get_user_by_username(db, username)
+    if not user or not verify_password(password, user.hash_pass):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Некорректный пользователь или пароль",
@@ -56,9 +57,13 @@ async def login(
         )
     session_payload = {"sub": user.username, "user_id": user.id, "role": user.role.value, "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)}
     session_id = encode(session_payload, SECRET_KEY, algorithm=ALGORITHM)
-    response.set_cookie(key="session_id", value=session_id, httponly=True, max_age=1800) 
-    await redis_client.setex(f"session:{session_id}", 1800, str(user.id))  
-    return {"message": "Успешно авторизованы!"}
-#Отправляй POST на /users/auth/register для регистрации.
-#Отправляй POST на /users/auth/login для логина с JSON {username, password}.
-#Сохраняй session_id в cookies (браузер делает это автоматически с withCredentials: true).
+    response.set_cookie(key="session_id", value=session_id, httponly=True, max_age=1800)
+    await redis_client.setex(f"session:{session_id}", 1800, str(user.id))
+    return {
+        "message": "Успешно авторизованы!",
+        "token": session_id,
+        "role": user.role.value
+    }
+# Отправляй POST на /users/auth/register для регистрации.
+# Отправляй POST на /users/auth/login для логина с данными формы (username, password).
+# Сохраняй session_id в cookies (браузер делает это автоматически с withCredentials: true).
