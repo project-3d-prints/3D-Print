@@ -43,7 +43,7 @@ services:
     networks:
       - app-network
     volumes:
-      - ./app:/app
+      - ./app:/app # Добавлено для hot-reload
 
   frontend:
     build:
@@ -54,14 +54,15 @@ services:
     networks:
       - app-network
     volumes:
-      - ./my:/my
-      - /my/node_modules
+      - ./my:/app/my # Изменен путь назначения
+      - frontend_node_modules:/app/my/node_modules # Исправлено
     depends_on:
       - web
 
 volumes:
   postgres_data:
   redis_data:
+  frontend_node_modules: # Добавлен отдельный volume для node_modules
 
 networks:
   app-network:
