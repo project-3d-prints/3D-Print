@@ -15,8 +15,8 @@ interface Printer {
 
 export default function CreateMaterial() {
   const [name, setName] = useState("");
-  const [quantityPrinter, setQuantityPrinter] = useState(0);
-  const [quantityStorage, setQuantityStorage] = useState(0);
+  const [quantityPrinter, setQuantityPrinter] = useState(0.0);
+  const [quantityStorage, setQuantityStorage] = useState(0.0);
   const [printerId, setPrinterId] = useState(0);
   const router = useRouter();
   const { user } = useAuthStore();
@@ -37,6 +37,10 @@ export default function CreateMaterial() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (printerId === 0) {
+      toast.error("Пожалуйста, выберите принтер");
+      return;
+    }
     try {
       const newMaterial = {
         name,
@@ -44,6 +48,7 @@ export default function CreateMaterial() {
         quantity_printer: quantityPrinter,
         quantity_storage: quantityStorage,
       };
+      console.log("Sending material:", newMaterial); // Для отладки
       await createMaterial(newMaterial);
       toast.success("Материал успешно добавлен!");
       router.push("/materials");
@@ -108,9 +113,12 @@ export default function CreateMaterial() {
             </label>
             <input
               id="quantityPrinter"
-              type="text"
+              type="number"
+              step="0.1"
               value={quantityPrinter}
-              onChange={(e) => setQuantityPrinter(Number(e.target.value))}
+              onChange={(e) =>
+                setQuantityPrinter(parseFloat(e.target.value) || 0.0)
+              }
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               placeholder="Введите количество"
               required
@@ -125,9 +133,12 @@ export default function CreateMaterial() {
             </label>
             <input
               id="quantityStorage"
-              type="text"
+              type="number"
+              step="0.1"
               value={quantityStorage}
-              onChange={(e) => setQuantityStorage(Number(e.target.value))}
+              onChange={(e) =>
+                setQuantityStorage(parseFloat(e.target.value) || 0.0)
+              }
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               placeholder="Введите количество"
               required
@@ -136,7 +147,7 @@ export default function CreateMaterial() {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-4 py-2 bg-cyan-700 text-white rounded-md hover:bg-cyan-700"
+              className="px-4 py-2 bg-cyan-700 text-white rounded-md hover:bg-cyan-800"
             >
               Добавить
             </button>

@@ -10,7 +10,7 @@ export default function ListPrinters() {
     async function fetchPrinters() {
       try {
         const response = await getPrinters();
-        setPrinters(response.data);
+        setPrinters(response.data || []);
       } catch (err) {
         console.error("Error fetching printers:", err);
       }
@@ -33,13 +33,23 @@ export default function ListPrinters() {
             </tr>
           </thead>
           <tbody>
-            {printers.map((printer: any) => (
-              <tr key={printer.id} className="border-b">
-                <td className="p-2">{printer.id}</td>
-                <td className="p-2">{printer.name}</td>
-                <td className="p-2">{printer.owner}</td>
+            {printers.length > 0 ? (
+              printers.map((printer: any) => (
+                <tr key={printer.id} className="border-b">
+                  <td className="p-2">{printer.id}</td>
+                  <td className="p-2">{printer.name}</td>
+                  <td className="p-2">
+                    {printer.username || printer.owner || "Неизвестно"}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={3} className="p-2 text-center">
+                  Нет принтеров.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

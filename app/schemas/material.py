@@ -1,16 +1,21 @@
 from pydantic import BaseModel, Field
 
-class MaterialCreate(BaseModel):#Формат для создания материала.
+class MaterialCreate(BaseModel):  # Формат для создания материала
     name: str = Field(..., example="PLA")
-    printer_id: int 
-    quantity: float = Field(..., gt=0, example=5.0)  
+    printer_id: int
+    quantity_printer: float = Field(..., gt=0, example=5.0)
+    quantity_storage: float = Field(..., gt=0, example=10.0)
 
-class MaterialOut(MaterialCreate):#Формат ответа.
+class MaterialOut(MaterialCreate):  # Формат ответа
     id: int
+    printer_id: int
+    printer_name: str | None = None  # Добавляем название принтера
 
     class Config:
         orm_mode = True
 
-class MaterialUpdate(BaseModel):#Формат для обновления количества.
-    quantity: float = Field(..., gt=0, example=10.0)
-#Используй для форм добавления/обновления материалов.
+class MaterialUpdate(BaseModel):  # Формат для обновления количества
+    quantity_printer: float | None = Field(None, ge=0, example=10.0)
+    quantity_storage: float | None = Field(None, ge=0, example=15.0)
+
+# Используй для форм добавления/обновления материалов

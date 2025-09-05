@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getQueue, getPrinters } from "../../lib/api";
+import { getQueue, getPrinters } from "../../lib/api"; // Разкомментировали getPrinters
 import { useAuthStore } from "../../lib/store";
 
 interface Job {
@@ -33,23 +33,27 @@ export default function Dashboard() {
     async function fetchData() {
       setLoading(true);
       try {
+        // Получаем список принтеров
         const printersResponse = await getPrinters();
-        setPrinters(printersResponse.data);
+        setPrinters(printersResponse.data || []);
+
+        // Получаем очередь
         const queueResponse = await getQueue(0, ""); // Все заявки
         console.log("Queue response:", queueResponse); // Отладка
         if (queueResponse.data && Array.isArray(queueResponse.data)) {
           const sortedJobs = queueResponse.data.sort(
             (a: Job, b: Job) =>
-              new Date(b.date).getTime() - new Date(a.date).getTime()
+              new Date(b.date || b.deadline).getTime() -
+              new Date(a.date || a.deadline).getTime()
           );
           setRecentJobs(sortedJobs.slice(0, 3)); // Берем последние 3 заявки
         } else {
           console.error("Invalid data format from getQueue:", queueResponse);
-          setRecentJobs([]); // Устанавливаем пустой массив при ошибке
+          setRecentJobs([]);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
-        setRecentJobs([]); // Устанавливаем пустой массив при ошибке
+        setRecentJobs([]);
       } finally {
         setLoading(false);
       }
@@ -81,7 +85,7 @@ export default function Dashboard() {
                 className="p-2 border-b border-gray-200 text-cyan-700"
               >
                 ID: {job.id}, Принтер: {getPrinterName(job.printer_id)}, Дата:{" "}
-                {job.date}
+                {job.date || job.deadline || "Нет даты"}
               </li>
             ))}
           </ul>

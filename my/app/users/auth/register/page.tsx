@@ -38,7 +38,7 @@ export default function Register() {
           <div>
             <label
               htmlFor="username"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Имя пользователя
             </label>
@@ -48,14 +48,14 @@ export default function Register() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
-              placeholder="e.g., john_doe"
+              placeholder="Введите имя пользователя"
               required
             />
           </div>
           <div>
             <label
               htmlFor="role"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Роль
             </label>
@@ -74,7 +74,7 @@ export default function Register() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-cyan-700"
             >
               Пароль
             </label>
@@ -84,6 +84,7 @@ export default function Register() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-600 focus:border-cyan-600"
+              placeholder="Введите пароль"
               required
             />
           </div>

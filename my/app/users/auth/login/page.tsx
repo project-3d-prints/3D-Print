@@ -49,7 +49,7 @@ export default function Login() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              placeholder="e.g., john_doe"
+              placeholder="Введите имя пользователя"
               required
             />
           </div>
@@ -66,6 +66,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
+              placeholder="Введите пароль"
               required
             />
           </div>

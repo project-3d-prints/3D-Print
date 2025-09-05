@@ -1,4 +1,4 @@
-// lib/api.ts
+// lib/api.ts (фрагмент для материалов)
 export interface Material {
   id?: number;
   name: string;
@@ -27,39 +27,91 @@ export interface Job {
 }
 
 export const getMaterials = async () => {
-  const materials = JSON.parse(localStorage.getItem("materials") || "[]");
-  return { data: materials };
+  try {
+    const response = await fetch("http://localhost:8000/materials/", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok)
+      throw new Error((await response.text()) || "Failed to fetch materials");
+    const data = await response.json();
+    return Array.isArray(data) ? { data } : data;
+  } catch (error) {
+    console.error("Error fetching materials:", error);
+    return { data: [] };
+  }
 };
 
 export const getMaterial = async (id: number) => {
-  const materials = JSON.parse(localStorage.getItem("materials") || "[]");
-  const material = materials.find((m: Material) => m.id === id);
-  return { data: material || { quantity_printer: 0, quantity_storage: 0 } };
+  try {
+    const response = await fetch(`http://localhost:8000/materials/${id}`, {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok)
+      throw new Error((await response.text()) || "Failed to fetch material");
+    const data = await response.json();
+    return { data };
+  } catch (error) {
+    console.error("Error fetching material:", error);
+    throw error;
+  }
 };
 
 export const createMaterial = async (material: Omit<Material, "id">) => {
-  const materials = JSON.parse(localStorage.getItem("materials") || "[]");
-  const newMaterial = { ...material, id: materials.length + 1 };
-  materials.push(newMaterial);
-  localStorage.setItem("materials", JSON.stringify(materials));
-  return { data: newMaterial };
+  try {
+    const response = await fetch("http://localhost:8000/materials/", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(material),
+    });
+    if (!response.ok)
+      throw new Error((await response.text()) || "Failed to create material");
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating material:", error);
+    throw error;
+  }
 };
 
 export const updateMaterial = async (
   id: number,
   updates: { quantity_printer: number; quantity_storage: number }
 ) => {
-  let materials = JSON.parse(localStorage.getItem("materials") || "[]");
-  materials = materials.map((m: Material) =>
-    m.id === id ? { ...m, ...updates } : m
-  );
-  localStorage.setItem("materials", JSON.stringify(materials));
-  return { data: { id, ...updates } };
+  try {
+    const response = await fetch(`http://localhost:8000/materials/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok)
+      throw new Error((await response.text()) || "Failed to update material");
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating material:", error);
+    throw error;
+  }
 };
 
 export const getPrinters = async () => {
-  const printers = JSON.parse(localStorage.getItem("printers") || "[]");
-  return { data: printers };
+  try {
+    const response = await fetch("http://localhost:8000/printers", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok)
+      throw new Error((await response.text()) || "Failed to fetch printers");
+    const data = await response.json();
+    return Array.isArray(data) ? { data } : data;
+  } catch (error) {
+    console.error("Error fetching printers:", error);
+    return { data: [] };
+  }
 };
 
 export const createPrinter = async (printer: {
@@ -67,11 +119,20 @@ export const createPrinter = async (printer: {
   status: string;
   owner: string;
 }) => {
-  const printers = JSON.parse(localStorage.getItem("printers") || "[]");
-  const newPrinter = { id: printers.length + 1, ...printer };
-  printers.push(newPrinter);
-  localStorage.setItem("printers", JSON.stringify(printers));
-  return { data: newPrinter };
+  try {
+    const response = await fetch("http://localhost:8000/printers", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(printer),
+    });
+    if (!response.ok)
+      throw new Error((await response.text()) || "Failed to create printer");
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating printer:", error);
+    throw error;
+  }
 };
 
 export const getQueue = async (printerId: number, day: string) => {
@@ -83,7 +144,8 @@ export const getQueue = async (printerId: number, day: string) => {
   });
   if (!response.ok)
     throw new Error((await response.text()) || "Failed to fetch queue");
-  return response.json();
+  const data = await response.json();
+  return Array.isArray(data) ? { data } : data;
 };
 
 export const createJob = async (job: Omit<Job, "id">) => {

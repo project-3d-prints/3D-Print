@@ -10,15 +10,21 @@ export default function EditMaterial() {
   const params = useParams();
   const id = Number(params.id);
   const router = useRouter();
-  const [quantityPrinter, setQuantityPrinter] = useState(0);
-  const [quantityStorage, setQuantityStorage] = useState(0);
+  const [name, setName] = useState("");
+  const [printerId, setPrinterId] = useState(0);
+  const [quantityPrinter, setQuantityPrinter] = useState(0.0);
+  const [quantityStorage, setQuantityStorage] = useState(0.0);
 
   useEffect(() => {
     async function fetchMaterial() {
       try {
         const response = await getMaterial(id);
-        setQuantityPrinter(response.data.quantity_printer);
-        setQuantityStorage(response.data.quantity_storage);
+        const { name, printer_id, quantity_printer, quantity_storage } =
+          response.data;
+        setName(name);
+        setPrinterId(printer_id);
+        setQuantityPrinter(quantity_printer);
+        setQuantityStorage(quantity_storage);
       } catch (error) {
         console.error("Error fetching material:", error);
         toast.error("Не удалось найти материал");
@@ -55,6 +61,36 @@ export default function EditMaterial() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
+              htmlFor="name"
+              className="block text-sm font-medium text-cyan-700"
+            >
+              Название материала
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              readOnly
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 bg-gray-100"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="printerId"
+              className="block text-sm font-medium text-cyan-700"
+            >
+              ID Принтера
+            </label>
+            <input
+              id="printerId"
+              type="text"
+              value={printerId}
+              readOnly
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 bg-gray-100"
+            />
+          </div>
+          <div>
+            <label
               htmlFor="quantityPrinter"
               className="block text-sm font-medium text-cyan-700"
             >
@@ -62,9 +98,12 @@ export default function EditMaterial() {
             </label>
             <input
               id="quantityPrinter"
-              type="text"
+              type="number"
+              step="0.1"
               value={quantityPrinter}
-              onChange={(e) => setQuantityPrinter(Number(e.target.value))}
+              onChange={(e) =>
+                setQuantityPrinter(parseFloat(e.target.value) || 0.0)
+              }
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               min="0"
               required
@@ -79,9 +118,12 @@ export default function EditMaterial() {
             </label>
             <input
               id="quantityStorage"
-              type="text"
+              type="number"
+              step="0.1"
               value={quantityStorage}
-              onChange={(e) => setQuantityStorage(Number(e.target.value))}
+              onChange={(e) =>
+                setQuantityStorage(parseFloat(e.target.value) || 0.0)
+              }
               className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
               min="0"
               required
