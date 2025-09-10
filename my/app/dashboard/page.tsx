@@ -1,8 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getQueue, getPrinters } from "../../lib/api"; // Разкомментировали getPrinters
+import { getQueue, getPrinters } from "../../lib/api";
 import { useAuthStore } from "../../lib/store";
+
+interface Printer {
+  id: number;
+  name: string;
+  status: string;
+  owner: string;
+}
+
 
 interface Job {
   id: number;
@@ -14,13 +22,8 @@ interface Job {
   date: string;
   material: string;
   priority: number;
-}
-
-interface Printer {
-  id: number;
-  name: string;
-  status: string;
-  owner: string;
+  displayDate?: string; // Уже добавлено ранее
+  created_at?: string; // Добавлено как опциональное поле
 }
 
 export default function Dashboard() {
@@ -33,22 +36,27 @@ export default function Dashboard() {
     async function fetchData() {
       setLoading(true);
       try {
-        // Получаем список принтеров
         const printersResponse = await getPrinters();
         setPrinters(printersResponse.data || []);
 
-        // Получаем очередь
         const queueResponse = await getQueue(0, ""); // Все заявки
-        console.log("Queue response:", queueResponse); // Отладка
+        console.log("Queue response (raw):", queueResponse); // Полный ответ для отладки
         if (queueResponse.data && Array.isArray(queueResponse.data)) {
-          const sortedJobs = queueResponse.data.sort(
-            (a: Job, b: Job) =>
-              new Date(b.date || b.deadline).getTime() -
-              new Date(a.date || a.deadline).getTime()
-          );
-          setRecentJobs(sortedJobs.slice(0, 3)); // Берем последние 3 заявки
+          console.log("Queue data:", queueResponse.data); // Данные для отладки
+          const sortedJobs = queueResponse.data
+            .map((job: Job) => ({
+              ...job,
+              displayDate:
+                job.date || job.deadline || job.created_at || "Нет даты", // Используем created_at
+            }))
+            .sort((a: Job, b: Job) => {
+              const dateA = new Date(a.displayDate!).getTime(); // ! — уверены, что displayDate есть после map
+              const dateB = new Date(b.displayDate!).getTime();
+              return dateB - dateA; // По убыванию (последние сначала)
+            });
+          setRecentJobs(sortedJobs.slice(0, 3)); // Последние 3 заявки
         } else {
-          console.error("Invalid data format from getQueue:", queueResponse);
+          console.warn("No valid data from getQueue, received:", queueResponse);
           setRecentJobs([]);
         }
       } catch (err) {
@@ -85,7 +93,7 @@ export default function Dashboard() {
                 className="p-2 border-b border-gray-200 text-cyan-700"
               >
                 ID: {job.id}, Принтер: {getPrinterName(job.printer_id)}, Дата:{" "}
-                {job.date || job.deadline || "Нет даты"}
+                {job.displayDate}
               </li>
             ))}
           </ul>

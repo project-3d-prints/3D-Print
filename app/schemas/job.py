@@ -1,28 +1,30 @@
-from pydantic import BaseModel, Field
+# schemas/job.py
+from pydantic import BaseModel
 from datetime import date
+from typing import Optional
 
-class JobCreate(BaseModel):#Формат входных данных для создания задания.
+class JobCreate(BaseModel):
     printer_id: int
-    duration: int
-    deadline: date  
-    material_amount: int
+    duration: float
+    deadline: str  # Строковый формат даты (например, "2025-09-14")
+    material_amount: float
+    material_id: str  # Строковый ID материала (например, "11")
 
     class Config:
-        schema_extra = {
-            "example": {
-                "printer_id": 0,
-                "duration": 0,
-                "deadline": "2025-06-18T14:25:00",
-                "material_amount": 0
-            }
-        }
-        
-class JobOut(JobCreate):#Формат ответа, включает дополнительные поля (id, user_id, created_at).
+        from_attributes = True
+
+class JobOut(BaseModel):
     id: int
     user_id: int
-    created_at: date
+    printer_id: int
+    duration: float
+    deadline: str  # Строка в формате ISO (например, "2025-09-14")
+    created_at: str  # Строка в формате ISO
+    material_amount: float
+    priority: int
+    user: str
+    date: Optional[str] = None  # Необязательное поле, строка или None
+    material: str  # Имя материала, например "ABS"
 
     class Config:
-        orm_mode = True
-#Отправляй JSON в формате JobCreate для POST /jobs.
-#Обрабатывай ответы в формате JobOut.
+        from_attributes = True

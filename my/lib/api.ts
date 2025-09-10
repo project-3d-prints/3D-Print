@@ -1,4 +1,4 @@
-// lib/api.ts (фрагмент для материалов)
+// lib/api.ts
 export interface Material {
   id?: number;
   name: string;
@@ -24,6 +24,16 @@ export interface Job {
   date: string;
   material: string;
   priority: number;
+  displayDate?: string; // Уже добавлено ранее
+  created_at?: string; // Добавлено как опциональное поле
+}
+
+export interface JobCreate {
+  printer_id: number;
+  duration: number; // Изменено с string на number
+  deadline: string;
+  material_amount: number; // Изменено с string на number
+  material_id: string; // Пока оставим как string, проверим бэкенд
 }
 
 export const getMaterials = async () => {
@@ -148,16 +158,27 @@ export const getQueue = async (printerId: number, day: string) => {
   return Array.isArray(data) ? { data } : data;
 };
 
-export const createJob = async (job: Omit<Job, "id">) => {
-  const jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
-  const newJob = {
-    ...job,
-    id: jobs.length + 1,
-    date: new Date().toISOString().split("T")[0],
-  };
-  jobs.push(newJob);
-  localStorage.setItem("jobs", JSON.stringify(jobs));
-  return { data: newJob };
+export const createJob = async (job: JobCreate) => {
+  try {
+    console.log("Sending to server:", job);
+    const response = await fetch("http://localhost:8000/jobs/", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(job),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Server error response:", errorText);
+      throw new Error(errorText || "Failed to create job");
+    }
+    const data = await response.json();
+    console.log("Successful job creation:", data);
+    return data;
+  } catch (error) {
+    console.error("Full error:", error);
+    throw error;
+  }
 };
 
 export const register = async (data: {

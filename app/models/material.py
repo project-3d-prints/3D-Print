@@ -1,4 +1,3 @@
-# models/material.py
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import Base
@@ -14,5 +13,4 @@ class Material(Base):  # Описывает материал для печати
     quantity_storage = Column(Float, nullable=False)  # Количество на складе
 
     printer = relationship("Printer", back_populates="materials")
-
-# Используется в /materials для добавления/обновления материалов
+    jobs = relationship("Job", back_populates="material")  # Добавлено для связи с Job

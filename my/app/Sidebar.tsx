@@ -48,7 +48,7 @@ export default function Sidebar() {
       iconActive: "/img/add2.svg",
     },
     {
-      href: "/jobs",
+      href: "/jobs/queue/0",
       label: "Список заявок",
       icon: "/img/queue.svg",
       iconActive: "/img/queue2.svg",
