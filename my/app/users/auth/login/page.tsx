@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { login } from "../../../../lib/api";
-import { useAuthStore } from "../../../../lib/store";
+import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -10,26 +9,33 @@ import toast from "react-hot-toast";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const { setAuth } = useAuthStore();
+  const { data: session } = useSession();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await login(username, password);
-      console.log("Login response:", response); // Для отладки
-      if (response.token && response.role) {
-        setAuth({ token: response.token, role: response.role, username }); // Передаём введённый username
+      const result = await signIn("keycloak", {
+        username,
+        password,
+        callbackUrl: "http://localhost:3000/dashboard", // Полный URL
+        redirect: false,
+      });
+      if (result?.error) {
+        toast.error("Ошибка входа: " + result.error);
+      } else {
         toast.success("Вход выполнен!");
         router.push("/dashboard");
-      } else {
-        toast.error("Неожиданный ответ сервера");
       }
     } catch (error: any) {
-      console.error("Error logging in:", error.message);
-      toast.error("Не удалось войти в аккаунт: " + error.message);
+      toast.error("Не удалось войти: " + error.message);
     }
   };
+
+  if (session) {
+    router.push("/dashboard");
+    return null;
+  }
 
   return (
     <div className="container mx-auto p-4 flex items-center justify-center min-h-screen">

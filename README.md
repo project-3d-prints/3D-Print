@@ -80,6 +80,7 @@ project_3d-main
 ├─ Dockerfile
 ├─ Dockerfile-frontend
 ├─ my
+│  ├─ .env
 │  ├─ .next
 │  │  ├─ app-build-manifest.json
 │  │  ├─ build-manifest.json
@@ -137,19 +138,21 @@ project_3d-main
 │  │  ├─ routes-manifest.json
 │  │  ├─ server
 │  │  │  ├─ app
+│  │  │  │  ├─ api
+│  │  │  │  │  └─ auth
+│  │  │  │  │     └─ [...nextauth]
+│  │  │  │  │        ├─ route.js
+│  │  │  │  │        └─ route_client-reference-manifest.js
+│  │  │  │  ├─ dashboard
+│  │  │  │  │  ├─ page.js
+│  │  │  │  │  └─ page_client-reference-manifest.js
 │  │  │  │  ├─ page.js
 │  │  │  │  ├─ page_client-reference-manifest.js
-│  │  │  │  ├─ users
-│  │  │  │  │  └─ auth
-│  │  │  │  │     ├─ login
-│  │  │  │  │     │  ├─ page.js
-│  │  │  │  │     │  └─ page_client-reference-manifest.js
-│  │  │  │  │     └─ register
-│  │  │  │  │        ├─ page.js
-│  │  │  │  │        └─ page_client-reference-manifest.js
-│  │  │  │  └─ _not-found
-│  │  │  │     ├─ page.js
-│  │  │  │     └─ page_client-reference-manifest.js
+│  │  │  │  └─ users
+│  │  │  │     └─ auth
+│  │  │  │        └─ login
+│  │  │  │           ├─ page.js
+│  │  │  │           └─ page_client-reference-manifest.js
 │  │  │  ├─ app-paths-manifest.json
 │  │  │  ├─ interception-route-rewrite-manifest.js
 │  │  │  ├─ middleware-build-manifest.js
@@ -161,25 +164,41 @@ project_3d-main
 │  │  │  ├─ server-reference-manifest.js
 │  │  │  ├─ server-reference-manifest.json
 │  │  │  ├─ vendor-chunks
+│  │  │  │  ├─ @babel.js
+│  │  │  │  ├─ @panva.js
 │  │  │  │  ├─ @swc.js
+│  │  │  │  ├─ cookie.js
 │  │  │  │  ├─ goober.js
+│  │  │  │  ├─ jose.js
+│  │  │  │  ├─ lru-cache.js
+│  │  │  │  ├─ next-auth.js
 │  │  │  │  ├─ next.js
+│  │  │  │  ├─ oauth.js
+│  │  │  │  ├─ object-hash.js
+│  │  │  │  ├─ oidc-token-hash.js
+│  │  │  │  ├─ openid-client.js
+│  │  │  │  ├─ preact-render-to-string.js
+│  │  │  │  ├─ preact.js
 │  │  │  │  ├─ react-hot-toast.js
+│  │  │  │  ├─ uuid.js
+│  │  │  │  ├─ yallist.js
 │  │  │  │  └─ zustand.js
 │  │  │  └─ webpack-runtime.js
 │  │  ├─ static
 │  │  │  ├─ chunks
 │  │  │  │  ├─ app
+│  │  │  │  │  ├─ api
+│  │  │  │  │  │  └─ auth
+│  │  │  │  │  │     └─ [...nextauth]
+│  │  │  │  │  │        └─ route.js
+│  │  │  │  │  ├─ dashboard
+│  │  │  │  │  │  └─ page.js
 │  │  │  │  │  ├─ layout.js
 │  │  │  │  │  ├─ page.js
-│  │  │  │  │  ├─ users
-│  │  │  │  │  │  └─ auth
-│  │  │  │  │  │     ├─ login
-│  │  │  │  │  │     │  └─ page.js
-│  │  │  │  │  │     └─ register
-│  │  │  │  │  │        └─ page.js
-│  │  │  │  │  └─ _not-found
-│  │  │  │  │     └─ page.js
+│  │  │  │  │  └─ users
+│  │  │  │  │     └─ auth
+│  │  │  │  │        └─ login
+│  │  │  │  │           └─ page.js
 │  │  │  │  ├─ app-pages-internals.js
 │  │  │  │  ├─ main-app.js
 │  │  │  │  ├─ polyfills.js
@@ -193,33 +212,41 @@ project_3d-main
 │  │  │  ├─ media
 │  │  │  │  ├─ 10dadb2e82d03733-s.woff2
 │  │  │  │  ├─ 200388358b398524-s.woff2
-│  │  │  │  ├─ 34900c74a84112b6-s.woff2
 │  │  │  │  ├─ 630c17af355fa44e-s.p.woff2
+│  │  │  │  ├─ 6e67fad4fa881005-s.woff2
 │  │  │  │  └─ 95d1875af7c44e92-s.woff2
 │  │  │  └─ webpack
-│  │  │     ├─ 051609238a719843.webpack.hot-update.json
-│  │  │     ├─ 3437037929b2339c.webpack.hot-update.json
-│  │  │     ├─ 4bce66dee4c0069e.webpack.hot-update.json
+│  │  │     ├─ 1011e6c757020078.webpack.hot-update.json
 │  │  │     ├─ 633457081244afec._.hot-update.json
-│  │  │     ├─ d3fda58ae9ecd814.webpack.hot-update.json
-│  │  │     ├─ webpack.051609238a719843.hot-update.js
-│  │  │     ├─ webpack.3437037929b2339c.hot-update.js
-│  │  │     ├─ webpack.4bce66dee4c0069e.hot-update.js
-│  │  │     └─ webpack.d3fda58ae9ecd814.hot-update.js
+│  │  │     ├─ a8c368c8fe04078b.webpack.hot-update.json
+│  │  │     ├─ a96fe1b2b657a628.webpack.hot-update.json
+│  │  │     ├─ app
+│  │  │     │  └─ layout.1011e6c757020078.hot-update.js
+│  │  │     ├─ webpack.1011e6c757020078.hot-update.js
+│  │  │     ├─ webpack.a8c368c8fe04078b.hot-update.js
+│  │  │     └─ webpack.a96fe1b2b657a628.hot-update.js
 │  │  ├─ trace
 │  │  └─ types
 │  │     ├─ app
+│  │     │  ├─ api
+│  │     │  │  └─ auth
+│  │     │  │     └─ [...nextauth]
+│  │     │  │        └─ route.ts
+│  │     │  ├─ dashboard
+│  │     │  │  └─ page.ts
 │  │     │  ├─ layout.ts
 │  │     │  ├─ page.ts
 │  │     │  └─ users
 │  │     │     └─ auth
-│  │     │        ├─ login
-│  │     │        │  └─ page.ts
-│  │     │        └─ register
+│  │     │        └─ login
 │  │     │           └─ page.ts
 │  │     ├─ cache-life.d.ts
 │  │     └─ package.json
 │  ├─ app
+│  │  ├─ api
+│  │  │  └─ auth
+│  │  │     └─ [...nextauth]
+│  │  │        └─ route.ts
 │  │  ├─ ClientNav.tsx
 │  │  ├─ dashboard
 │  │  │  └─ page.tsx
@@ -245,12 +272,13 @@ project_3d-main
 │  │  │  │  └─ page.tsx
 │  │  │  └─ page.tsx
 │  │  ├─ Sidebar.tsx
-│  │  └─ users
-│  │     └─ auth
-│  │        ├─ login
-│  │        │  └─ page.tsx
-│  │        └─ register
-│  │           └─ page.tsx
+│  │  ├─ users
+│  │  │  └─ auth
+│  │  │     ├─ login
+│  │  │     │  └─ page.tsx
+│  │  │     └─ register
+│  │  │        └─ page.tsx
+│  │  └─ wrapper.tsx
 │  ├─ eslint.config.mjs
 │  ├─ lib
 │  │  ├─ api.ts

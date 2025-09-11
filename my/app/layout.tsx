@@ -1,7 +1,6 @@
 import "./globals.css";
 import { Raleway } from "next/font/google";
-import Sidebar from "./Sidebar";
-import { Toaster } from "react-hot-toast";
+import Wrapper from "./wrapper";
 
 const raleway = Raleway({ subsets: ["latin"] });
 
@@ -20,28 +19,7 @@ export default function RootLayout({
       <body
         className={`${raleway.className} bg-[var(--background)] min-h-screen flex`}
       >
-        <Sidebar />
-        <main className="ml-64 p-4 w-full">
-          {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              success: {
-                style: {
-                  background: "#4CAF50",
-                  color: "#FFFFFF",
-                },
-              },
-              error: {
-                style: {
-                  background: "#F44336",
-                  color: "#FFFFFF",
-                },
-              },
-              duration: 5000,
-            }}
-          />
-        </main>
+        <Wrapper>{children}</Wrapper>
       </body>
     </html>
   );
