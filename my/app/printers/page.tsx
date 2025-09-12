@@ -24,34 +24,28 @@ export default function ListPrinters() {
         Список принтеров
       </h1>
       <div className="bg-white p-6 rounded-md shadow-md">
-        <table className="w-full table-auto">
-          <thead>
-            <tr className="bg-gray-200 text-cyan-700">
-              <th className="p-2">ID</th>
-              <th className="p-2">Название</th>
-              <th className="p-2">Владелец</th>
-            </tr>
-          </thead>
-          <tbody>
-            {printers.length > 0 ? (
-              printers.map((printer: any) => (
-                <tr key={printer.id} className="border-b">
-                  <td className="p-2">{printer.id}</td>
-                  <td className="p-2">{printer.name}</td>
-                  <td className="p-2">
-                    {printer.username || printer.owner || "Неизвестно"}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={3} className="p-2 text-center">
-                  Нет принтеров.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {/* Заголовки таблицы */}
+        <div className="grid grid-cols-3 gap-4 mb-4 bg-gray-200 p-2 rounded-md">
+          <div className="font-semibold text-cyan-700 text-center">ID</div>
+          <div className="font-semibold text-cyan-700">Название</div>
+          <div className="font-semibold text-cyan-700">Владелец</div>
+        </div>
+
+        {/* Данные таблицы */}
+        {printers.length > 0 ? (
+          printers.map((printer: any) => (
+            <div
+              key={printer.id}
+              className="grid grid-cols-3 gap-4 p-2 border-b hover:bg-gray-50"
+            >
+              <div className="text-center">{printer.id}</div>
+              <div>{printer.name}</div>
+              <div>{printer.username || printer.owner || "Неизвестно"}</div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center p-4 text-gray-500">Нет принтеров.</div>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { createJob, getPrinters, getMaterials } from "../../../lib/api";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import axios, { AxiosError } from "axios"; // Импорт AxiosError для типизации
+import axios, { AxiosError } from "axios";
 
 interface Printer {
   id: number;
@@ -28,7 +28,7 @@ export default function CreateJob() {
     duration: "",
     deadline: "",
     material_amount: "",
-    material: "", // Поле для выбора материала
+    material: "",
   });
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -58,7 +58,6 @@ export default function CreateJob() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Валидация дедлайна
     const today = new Date().toISOString().split("T")[0];
     if (!formData.deadline || formData.deadline <= today) {
       toast.error("Дедлайн должен быть валидной датой в будущем!");
@@ -87,15 +86,14 @@ export default function CreateJob() {
         duration: parseFloat(formData.duration),
         deadline: formData.deadline,
         material_amount: parseFloat(formData.material_amount),
-        material_id: selectedMaterial.id.toString(), // Строка
+        material_id: selectedMaterial.id.toString(),
       };
-      console.log("Sending job data:", jobData); // Отладка
+      console.log("Sending job data:", jobData);
       await createJob(jobData);
       toast.success("Заявка успешно создана!");
       router.push("/jobs/queue/0");
     } catch (error) {
       console.error("Error creating job:", error);
-      // Гибкая обработка ошибки
       let errorMessage = "Произошла непредвиденная ошибка.";
       if (error instanceof AxiosError) {
         if (

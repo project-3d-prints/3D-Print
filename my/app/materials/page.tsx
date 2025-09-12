@@ -34,48 +34,52 @@ export default function ListMaterials() {
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold text-cyan-700 mb-6">Материалы</h1>
       <div className="bg-white p-6 rounded-md shadow-md">
-        <table className="w-full table-auto">
-          <thead>
-            <tr className="bg-gray-200 text-cyan-700">
-              <th className="p-2">ID</th>
-              <th className="p-2">Название</th>
-              <th className="p-2">Принтер (ID / Название)</th>
-              <th className="p-2">В принтере</th>
-              <th className="p-2">На складе</th>
-              <th className="p-2">Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {materials.length > 0 ? (
-              materials.map((material) => (
-                <tr key={material.id} className="border-b">
-                  <td className="p-2">{material.id}</td>
-                  <td className="p-2">{material.name}</td>
-                  <td className="p-2">
-                    {material.printer_id} /{" "}
-                    {material.printer_name || "Не указано"}
-                  </td>
-                  <td className="p-2">{material.quantity_printer}</td>
-                  <td className="p-2">{material.quantity_storage}</td>
-                  <td className="p-2">
-                    <Link href={`/materials/${material.id}/edit`}>
-                      <button className="px-2 py-1 bg-cyan-700 text-white rounded-md hover:bg-cyan-800">
-                        Редактировать
-                      </button>
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="p-2 text-center">
-                  Нет материалов.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {/* Заголовки таблицы */}
+        <div className="grid grid-cols-6 gap-4 mb-4 bg-gray-200 p-2 rounded-md">
+          <div className="font-semibold text-cyan-700 text-center">ID</div>
+          <div className="font-semibold text-cyan-700">Название</div>
+          <div className="font-semibold text-cyan-700">Принтер</div>
+          <div className="font-semibold text-cyan-700 text-center">
+            В принтере
+          </div>
+          <div className="font-semibold text-cyan-700 text-center">
+            На складе
+          </div>
+          <div className="font-semibold text-cyan-700 text-center">
+            Действия
+          </div>
+        </div>
+
+        {/* Данные таблицы */}
+        {materials.length > 0 ? (
+          materials.map((material) => (
+            <div
+              key={material.id}
+              className="grid grid-cols-6 gap-4 p-2 border-b hover:bg-gray-50"
+            >
+              <div className="text-center">{material.id}</div>
+              <div className="truncate">{material.name}</div>
+              <div className="truncate">
+                {material.printer_id} / {material.printer_name || "Не указано"}
+              </div>
+              <div className="text-center">{material.quantity_printer}</div>
+              <div className="text-center">{material.quantity_storage}</div>
+              <div className="text-center">
+                <Link href={`/materials/${material.id}/edit`}>
+                  <button className="px-2 py-1 bg-cyan-700 text-white rounded-md hover:bg-cyan-800 text-sm">
+                    Редактировать
+                  </button>
+                </Link>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center p-4 text-gray-500 col-span-6">
+            Нет материалов.
+          </div>
+        )}
       </div>
     </div>
   );
 }
+  

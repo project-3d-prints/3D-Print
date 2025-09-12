@@ -117,7 +117,6 @@ export default function Sidebar() {
                   />
                 </div>
                 <span className="text-cyan-50">{item.label}</span>{" "}
-                {/* Изменён цвет на белый */}
               </div>
             )}
           </div>
@@ -131,7 +130,7 @@ export default function Sidebar() {
             </span>
             <button
               onClick={handleLogout}
-              className="text-sm hover:underline w-full text-center decoration-none cursor-pointer text-red-200 hover:text-red-100"
+              className="text-sm hover:underline w-full text-center decoration-none cursor-pointer text-white hover:text-gray-200"
             >
               Выйти из аккаунта
             </button>

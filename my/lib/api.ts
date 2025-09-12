@@ -24,16 +24,16 @@ export interface Job {
   date: string;
   material: string;
   priority: number;
-  displayDate?: string; // Уже добавлено ранее
-  created_at?: string; // Добавлено как опциональное поле
+  displayDate?: string; 
+  created_at?: string; 
 }
 
 export interface JobCreate {
   printer_id: number;
-  duration: number; // Изменено с string на number
+  duration: number; 
   deadline: string;
-  material_amount: number; // Изменено с string на number
-  material_id: string; // Пока оставим как string, проверим бэкенд
+  material_amount: number; 
+  material_id: string;
 }
 
 export const getMaterials = async () => {

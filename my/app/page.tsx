@@ -32,7 +32,7 @@ export default function Home() {
     async function fetchData() {
       setLoading(true);
       try {
-        const response = await getQueue(0, ""); // Все заявки
+        const response = await getQueue(0, "");
         console.log("Queue response:", response);
         const jobs = Array.isArray(response) ? response : response.data || [];
         const adaptedJobs = jobs
@@ -51,7 +51,7 @@ export default function Home() {
             (a: Job, b: Job) =>
               new Date(b.deadline).getTime() - new Date(a.deadline).getTime()
           )
-          .slice(0, 3); // Берем последние 3 заявки
+          .slice(0, 3);
         setRecentJobs(adaptedJobs);
       } catch (err) {
         console.error("Error fetching recent jobs:", err);

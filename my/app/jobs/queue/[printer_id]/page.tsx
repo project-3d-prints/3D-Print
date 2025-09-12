@@ -25,20 +25,17 @@ interface Printer {
 
 export default function JobQueue() {
   const params = useParams();
-  const [printerId, setPrinterId] = useState<number>(0); // Начальное значение — "Все принтеры"
+  const [printerId, setPrinterId] = useState<number>(0);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [day, setDay] = useState<string>("");
 
-  // Загружаем данные при монтировании и обновляем при изменении printerId или day
   useEffect(() => {
     async function fetchData() {
       try {
-        // Сначала загружаем принтеры
         const printersResponse = await getPrinters();
         setPrinters(printersResponse.data || []);
 
-        // Устанавливаем printerId из params, если он валиден
         const paramPrinterId = Number(params.printer_id);
         if (
           paramPrinterId &&
@@ -47,7 +44,6 @@ export default function JobQueue() {
           setPrinterId(paramPrinterId);
         }
 
-        // Загружаем очередь с учетом фильтров
         const response = await getQueue(printerId || 0, day);
         let filteredJobs = response.data || [];
         if (printerId !== 0) {
@@ -62,7 +58,7 @@ export default function JobQueue() {
       }
     }
     fetchData();
-  }, [params.printer_id, printerId, day]); // Зависимости для перезагрузки
+  }, [params.printer_id, printerId, day]);
 
   const getDisplayName = (name: string, id: number) => {
     const nameCount = printers.filter((p: Printer) => p.name === name).length;
@@ -80,10 +76,12 @@ export default function JobQueue() {
       <h1 className="text-3xl font-bold text-cyan-800 mb-6">
         Очередь заявок по принтеру
       </h1>
+
+      {/* Фильтры */}
       <div className="bg-white p-6 rounded-md shadow-md mb-6">
         <h2 className="text-xl font-semibold mb-4">Выбор принтера и даты</h2>
-        <div className="flex space-x-4 mb-4">
-          <div className="w-1/2">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
             <label
               htmlFor="printerId"
               className="block text-sm font-medium text-cyan-700"
@@ -104,7 +102,7 @@ export default function JobQueue() {
               ))}
             </select>
           </div>
-          <div className="w-1/2">
+          <div>
             <label
               htmlFor="day"
               className="block text-sm font-medium text-cyan-700"
@@ -121,43 +119,48 @@ export default function JobQueue() {
           </div>
         </div>
       </div>
+
+      {/* Таблица заявок */}
       <div className="bg-white p-6 rounded-md shadow-md">
-        <table className="w-full table-auto">
-          <thead>
-            <tr className="bg-gray-200 text-cyan-700">
-              <th className="p-2">ID</th>
-              <th className="p-2">Принтер</th>
-              <th className="p-2">Пользователь</th>
-              <th className="p-2">Дата</th>
-              <th className="p-2">Материал</th>
-              <th className="p-2">Длительность</th>
-              <th className="p-2">Приоритет</th>
-            </tr>
-          </thead>
-          <tbody>
-            {jobs.map((job) => (
-              <tr key={job.id} className="border-b">
-                <td className="p-2">{job.id}</td>
-                <td className="p-2">
-                  {printers.find((p) => p.id === job.printer_id)?.name ||
-                    job.printer_id}
-                </td>
-                <td className="p-2">{job.user || "Не указан"}</td>
-                <td className="p-2">{job.date || "Не указана"}</td>
-                <td className="p-2">{job.material || "Не указан"}</td>
-                <td className="p-2">{job.duration}</td>
-                <td className="p-2">{job.priority || "Не указан"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-4">
-        <Link href="/dashboard">
-          <button className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">
-            Назад
-          </button>
-        </Link>
+        {/* Заголовки таблицы */}
+        <div className="grid grid-cols-7 gap-4 mb-4 bg-gray-200 p-2 rounded-md">
+          <div className="font-semibold text-cyan-700 text-center">ID</div>
+          <div className="font-semibold text-cyan-700">Принтер</div>
+          <div className="font-semibold text-cyan-700">Пользователь</div>
+          <div className="font-semibold text-cyan-700">Дата</div>
+          <div className="font-semibold text-cyan-700">Материал</div>
+          <div className="font-semibold text-cyan-700 text-center">
+            Длительность
+          </div>
+          <div className="font-semibold text-cyan-700 text-center">
+            Приоритет
+          </div>
+        </div>
+
+        {/* Данные таблицы */}
+        {jobs.length > 0 ? (
+          jobs.map((job) => (
+            <div
+              key={job.id}
+              className="grid grid-cols-7 gap-4 p-2 border-b hover:bg-gray-50"
+            >
+              <div className="text-center">{job.id}</div>
+              <div className="truncate">
+                {printers.find((p) => p.id === job.printer_id)?.name ||
+                  job.printer_id}
+              </div>
+              <div className="truncate">{job.user || "Не указан"}</div>
+              <div className="truncate">{job.date || "Не указана"}</div>
+              <div className="truncate">{job.material || "Не указан"}</div>
+              <div className="text-center">{job.duration}</div>
+              <div className="text-center">{job.priority || "Не указан"}</div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center p-4 text-gray-500 col-span-7">
+            Нет заявок.
+          </div>
+        )}
       </div>
     </div>
   );

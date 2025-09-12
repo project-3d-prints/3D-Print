@@ -13,16 +13,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# CORS middleware ДО включения роутеров
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Разрешаем фронтенд
-    allow_credentials=True,  # Разрешаем credentials (cookies)
-    allow_methods=["*"],  # Разрешаем все методы (GET, POST, etc.)
-    allow_headers=["*"],  # Разрешаем все заголовки
+    allow_origins=["http://localhost:3000"],  
+    allow_credentials=True,  
+    allow_methods=["*"],  
+    allow_headers=["*"],  
 )
 
-# Подключение маршрутов
+
 app.include_router(job.router)
 app.include_router(material.router)
 app.include_router(printer.router)
