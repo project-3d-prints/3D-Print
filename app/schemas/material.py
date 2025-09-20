@@ -3,7 +3,6 @@ from pydantic import BaseModel, Field
 class MaterialCreate(BaseModel):  # Формат для создания материала
     name: str = Field(..., example="PLA")
     printer_id: int
-    quantity_printer: float = Field(..., gt=0, example=5.0)
     quantity_storage: float = Field(..., gt=0, example=10.0)
 
 class MaterialOut(MaterialCreate):  # Формат ответа
@@ -14,8 +13,7 @@ class MaterialOut(MaterialCreate):  # Формат ответа
     class Config:
         orm_mode = True
 
-class MaterialUpdate(BaseModel):  # Формат для обновления количества
-    quantity_printer: float | None = Field(None, ge=0, example=10.0)
+class MaterialUpdate(BaseModel):  # Формат для обновления количества на складе
     quantity_storage: float | None = Field(None, ge=0, example=15.0)
 
 # Используй для форм добавления/обновления материалов
