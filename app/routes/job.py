@@ -16,7 +16,6 @@ from fastapi import Query
 from utils.sort_jobs import sort_jobs
 import logging
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
