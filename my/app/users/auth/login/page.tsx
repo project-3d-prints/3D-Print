@@ -10,16 +10,21 @@ import toast from "react-hot-toast";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { setAuth } = useAuthStore();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
     try {
       const response = await login(username, password);
-      console.log("Login response:", response); // Для отладки
-      if (response.token && response.role) {
-        setAuth({ token: response.token, role: response.role, username }); // Передаём введённый username
+      const token = response.access_token || response.token;
+      const role = response.role || response.user?.role;
+
+      if (token && role) {
+        setAuth({ token, role, username });
         toast.success("Вход выполнен!");
         router.push("/dashboard");
       } else {
@@ -27,64 +32,74 @@ export default function Login() {
       }
     } catch (error: any) {
       console.error("Error logging in:", error.message);
-      toast.error("Не удалось войти в аккаунт: " + error.message);
+      toast.error("Не удалось войти в аккаунт");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto p-4 flex items-center justify-center min-h-screen">
-      <div className="bg-white p-6 rounded-md shadow-md max-w-md w-full">
-        <h1 className="text-3xl font-bold text-cyan-800 mb-6">Авторизация</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-cyan-700"
-            >
-              Имя пользователя
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              placeholder="Введите имя пользователя"
-              required
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-cyan-700"
-            >
-              Пароль
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              placeholder="Введите пароль"
-              required
-            />
-          </div>
-          <div className="flex justify-end space-x-4">
-            <Link
-              href="/users/auth/register"
-              className="px-4 py-2 text-cyan-600 hover:text-cyan-800"
-            >
-              Нет аккаунта? Зарегистрироваться
-            </Link>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-center text-cyan-800">
+            ЗD Print
+          </h1>
+          <h2 className="mt-6 text-2xl font-bold text-center text-cyan-900">
+            Авторизация
+          </h2>
+        </div>
+
+        <div className="card">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Имя пользователя
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="form-input"
+                placeholder="Введите имя пользователя"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Пароль
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="form-input"
+                placeholder="Введите пароль"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
             <button
               type="submit"
-              className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700"
+              disabled={isLoading}
+              className="w-full btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Войти
+              {isLoading ? "Вход..." : "Войти"}
             </button>
-          </div>
-        </form>
+
+            <div className="text-center">
+              <Link
+                href="/users/auth/register"
+                className="text-cyan-600 hover:text-cyan-800 text-sm"
+              >
+                Нет аккаунта? Зарегистрироваться
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

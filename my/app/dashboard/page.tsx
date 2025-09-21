@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getQueue, getPrinters } from "../../lib/api";
 import { useAuthStore } from "../../lib/store";
+import LoadingSpinner from "../LoadingSpinner";
 
 interface Printer {
   id: number;
@@ -10,7 +11,6 @@ interface Printer {
   status: string;
   owner: string;
 }
-
 
 interface Job {
   id: number;
@@ -22,8 +22,8 @@ interface Job {
   date: string;
   material: string;
   priority: number;
-  displayDate?: string; // Уже добавлено ранее
-  created_at?: string; // Добавлено как опциональное поле
+  displayDate?: string;
+  created_at?: string;
 }
 
 export default function Dashboard() {
@@ -39,24 +39,21 @@ export default function Dashboard() {
         const printersResponse = await getPrinters();
         setPrinters(printersResponse.data || []);
 
-        const queueResponse = await getQueue(0, ""); // Все заявки
-        console.log("Queue response (raw):", queueResponse); // Полный ответ для отладки
+        const queueResponse = await getQueue(0, "");
         if (queueResponse.data && Array.isArray(queueResponse.data)) {
-          console.log("Queue data:", queueResponse.data); // Данные для отладки
           const sortedJobs = queueResponse.data
             .map((job: Job) => ({
               ...job,
               displayDate:
-                job.date || job.deadline || job.created_at || "Нет даты", // Используем created_at
+                job.date || job.deadline || job.created_at || "Нет даты",
             }))
             .sort((a: Job, b: Job) => {
-              const dateA = new Date(a.displayDate!).getTime(); // ! — уверены, что displayDate есть после map
+              const dateA = new Date(a.displayDate!).getTime();
               const dateB = new Date(b.displayDate!).getTime();
-              return dateB - dateA; // По убыванию (последние сначала)
+              return dateB - dateA;
             });
-          setRecentJobs(sortedJobs.slice(0, 3)); // Последние 3 заявки
+          setRecentJobs(sortedJobs.slice(0, 5));
         } else {
-          console.warn("No valid data from getQueue, received:", queueResponse);
           setRecentJobs([]);
         }
       } catch (err) {
@@ -74,34 +71,80 @@ export default function Dashboard() {
     return printer ? printer.name : "Неизвестный принтер";
   };
 
+  if (loading) {
+    return <LoadingSpinner text="Загружаем данные..." />;
+  }
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-cyan-700 mb-6">
+      <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
         Добро пожаловать, {user?.username}
       </h1>
-      <div className="bg-white p-6 rounded-md shadow-md">
+
+      <div className="card">
         <h2 className="text-xl font-semibold mb-4 text-cyan-700">
           Последние заявки
         </h2>
-        {loading ? (
-          <p className="text-cyan-700">Загрузка...</p>
-        ) : recentJobs.length > 0 ? (
-          <ul className="space-y-2">
+
+        {recentJobs.length > 0 ? (
+          <div className="space-y-3">
             {recentJobs.map((job) => (
-              <li
+              <div
                 key={job.id}
-                className="p-2 border-b border-gray-200 text-cyan-700"
+                className="border border-gray-200 rounded-lg p-3 bg-gray-50"
               >
-                ID: {job.id}, Принтер: {getPrinterName(job.printer_id)}, Дата:{" "}
-                {job.displayDate}
-              </li>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <div>
+                    <span className="font-medium text-cyan-700">ID:</span>
+                    <span className="ml-2">{job.id}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-cyan-700">Принтер:</span>
+                    <span className="ml-2 truncate">
+                      {getPrinterName(job.printer_id)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-cyan-700">
+                      Пользователь:
+                    </span>
+                    <span className="ml-2">{job.user || "Не указан"}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-cyan-700">Дата:</span>
+                    <span className="ml-2 truncate">{job.displayDate}</span>
+                  </div>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         ) : (
-          <p className="text-cyan-700">
-            Нет последних заявок. Попробуйте создать заявку.
-          </p>
+          <div className="text-center py-8">
+            <div className="text-4xl lg:text-6xl mb-4">📃</div>
+            <p className="text-gray-500 text-lg">Нет заявок</p>
+          </div>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div className="card text-center">
+          <div className="text-2xl font-bold text-cyan-700">
+            {printers.length}
+          </div>
+          <p className="text-gray-600">Принтеров</p>
+        </div>
+        <div className="card text-center">
+          <div className="text-2xl font-bold text-cyan-700">
+            {recentJobs.length}
+          </div>
+          <p className="text-gray-600">Активных заявок</p>
+        </div>
+        <div className="card text-center">
+          <div className="text-2xl font-bold text-cyan-700 capitalize">
+            {user?.role}
+          </div>
+          <p className="text-gray-600">Ваша роль</p>
+        </div>
       </div>
     </div>
   );

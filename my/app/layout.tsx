@@ -1,3 +1,4 @@
+// app/layout.tsx
 import "./globals.css";
 import { Raleway } from "next/font/google";
 import Sidebar from "./Sidebar";
@@ -16,12 +17,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="ru">
       <body
         className={`${raleway.className} bg-[var(--background)] min-h-screen flex`}
       >
         <Sidebar />
-        <main className="ml-64 p-4 w-full">
+        <main className="lg:ml-64 p-4 w-full mt-16 lg:mt-0">
           {children}
           <Toaster
             position="top-right"

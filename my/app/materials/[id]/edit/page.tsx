@@ -5,6 +5,9 @@ import { updateMaterial, getMaterial } from "../../../../lib/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
+import AuthGuard from "../../../AuthGuard";
+import LoadingSpinner from "../../../LoadingSpinner";
+import Link from "next/link";
 
 export default function EditMaterial() {
   const params = useParams();
@@ -14,6 +17,7 @@ export default function EditMaterial() {
   const [printerId, setPrinterId] = useState(0);
   const [quantityPrinter, setQuantityPrinter] = useState(0.0);
   const [quantityStorage, setQuantityStorage] = useState(0.0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchMaterial() {
@@ -28,6 +32,8 @@ export default function EditMaterial() {
       } catch (error) {
         console.error("Error fetching material:", error);
         toast.error("Не удалось найти материал");
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchMaterial();
@@ -48,104 +54,98 @@ export default function EditMaterial() {
     }
   };
 
-  const handleBack = () => {
-    router.push("/materials");
-  };
+  if (isLoading) {
+    return <LoadingSpinner text="Загружаем материал..." />;
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-cyan-800 mb-6">
-        Редактирование материала
-      </h1>
-      <div className="bg-white p-6 rounded-md shadow-md max-w-lg mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-cyan-700"
-            >
-              Название материала
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              readOnly
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 bg-gray-100"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="printerId"
-              className="block text-sm font-medium text-cyan-700"
-            >
-              ID Принтера
-            </label>
-            <input
-              id="printerId"
-              type="text"
-              value={printerId}
-              readOnly
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 bg-gray-100"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="quantityPrinter"
-              className="block text-sm font-medium text-cyan-700"
-            >
-              Количество в принтере
-            </label>
-            <input
-              id="quantityPrinter"
-              type="number"
-              step="0.1"
-              value={quantityPrinter}
-              onChange={(e) =>
-                setQuantityPrinter(parseFloat(e.target.value) || 0.0)
-              }
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              min="0"
-              required
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="quantityStorage"
-              className="block text-sm font-medium text-cyan-700"
-            >
-              Количество на складе
-            </label>
-            <input
-              id="quantityStorage"
-              type="number"
-              step="0.1"
-              value={quantityStorage}
-              onChange={(e) =>
-                setQuantityStorage(parseFloat(e.target.value) || 0.0)
-              }
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              min="0"
-              required
-            />
-          </div>
-          <div className="flex justify-around">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="px-4 py-2 bg-white text-cyan-700 rounded-md hover:bg-cyan-100"
-            >
-              Назад
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-cyan-700 text-white rounded-md hover:bg-cyan-800"
-            >
-              Сохранить
-            </button>
-          </div>
-        </form>
+    <AuthGuard requiredRole="глава лаборатории">
+      <div className="container mx-auto p-4">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800">
+            Редактирование материала
+          </h1>
+        </div>
+
+        <div className="card max-w-lg mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-cyan-700 mb-1">
+                  Название материала
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  readOnly
+                  className="form-input bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-cyan-700 mb-1">
+                  ID Принтера
+                </label>
+                <input
+                  type="text"
+                  value={printerId}
+                  readOnly
+                  className="form-input bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-cyan-700 mb-1">
+                  Количество в принтере (кг) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={quantityPrinter}
+                  onChange={(e) =>
+                    setQuantityPrinter(parseFloat(e.target.value) || 0.0)
+                  }
+                  className="form-input"
+                  min="0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-cyan-700 mb-1">
+                  Количество на складе (кг) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={quantityStorage}
+                  onChange={(e) =>
+                    setQuantityStorage(parseFloat(e.target.value) || 0.0)
+                  }
+                  className="form-input"
+                  min="0"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <button type="submit" className="btn btn-primary flex-1">
+                Сохранить изменения
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/materials")}
+                className="btn btn-secondary"
+              >
+                Отмена
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

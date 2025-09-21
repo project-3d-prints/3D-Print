@@ -6,6 +6,8 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import axios, { AxiosError } from "axios";
+import LoadingSpinner from "../../LoadingSpinner";
+import AuthGuard from "../../AuthGuard";
 
 interface Printer {
   id: number;
@@ -32,17 +34,22 @@ export default function CreateJob() {
   });
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const printersResponse = await getPrinters();
+        const [printersResponse, materialsResponse] = await Promise.all([
+          getPrinters(),
+          getMaterials(),
+        ]);
         setPrinters(printersResponse.data || []);
-        const materialsResponse = await getMaterials();
         setMaterials(materialsResponse.data || []);
       } catch (err) {
         console.error("Error fetching data:", err);
         toast.error("Не удалось загрузить данные");
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchData();
@@ -88,7 +95,7 @@ export default function CreateJob() {
         material_amount: parseFloat(formData.material_amount),
         material_id: selectedMaterial.id.toString(),
       };
-      console.log("Sending job data:", jobData);
+
       await createJob(jobData);
       toast.success("Заявка успешно создана!");
       router.push("/jobs/queue/0");
@@ -96,11 +103,7 @@ export default function CreateJob() {
       console.error("Error creating job:", error);
       let errorMessage = "Произошла непредвиденная ошибка.";
       if (error instanceof AxiosError) {
-        if (
-          error.response &&
-          typeof error.response.data === "object" &&
-          error.response.data.detail
-        ) {
+        if (error.response?.data?.detail) {
           errorMessage = error.response.data.detail;
         } else if (error.message) {
           errorMessage = error.message;
@@ -112,108 +115,121 @@ export default function CreateJob() {
     }
   };
 
+  if (isLoading) {
+    return <LoadingSpinner text="Загружаем данные..." />;
+  }
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-cyan-800 mb-6">Создание заявки</h1>
-      <div className="bg-white p-6 rounded-md shadow-md">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-cyan-700">
-              Принтер
-            </label>
-            <select
-              name="printer_id"
-              value={formData.printer_id}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              required
-            >
-              <option value="">Выберите принтер</option>
-              {printers.map((printer) => (
-                <option key={printer.id} value={printer.id.toString()}>
-                  {printer.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-cyan-700">
-              Длительность (ч)
-            </label>
-            <input
-              type="number"
-              name="duration"
-              value={formData.duration}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              step="0.1"
-              min="0.1"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-cyan-700">
-              Дедлайн
-            </label>
-            <input
-              type="date"
-              name="deadline"
-              value={formData.deadline}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-cyan-700">
-              Материал
-            </label>
-            <select
-              name="material"
-              value={formData.material}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              required
-            >
-              <option value="">Выберите материал</option>
-              {materials.map((material) => (
-                <option key={material.id} value={material.name}>
-                  {material.name} (Принтер: {material.quantity_printer}кг,
-                  Склад: {material.quantity_storage}кг)
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-cyan-700">
-              Количество материала (кг)
-            </label>
-            <input
-              type="number"
-              name="material_amount"
-              value={formData.material_amount}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-              step="0.1"
-              min="0.1"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-cyan-700 text-white rounded-md hover:bg-cyan-800"
-          >
-            Создать
-          </button>
-        </form>
+    <AuthGuard>
+      <div className="container mx-auto p-4">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800">
+            Создание заявки
+          </h1>
+        </div>
+
+        <div className="card max-w-2xl mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-cyan-700 mb-1">
+                  Принтер *
+                </label>
+                <select
+                  name="printer_id"
+                  value={formData.printer_id}
+                  onChange={handleChange}
+                  className="form-input"
+                  required
+                >
+                  <option value="">Выберите принтер</option>
+                  {printers.map((printer) => (
+                    <option key={printer.id} value={printer.id.toString()}>
+                      {printer.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-cyan-700 mb-1">
+                  Длительность (ч) *
+                </label>
+                <input
+                  type="number"
+                  name="duration"
+                  value={formData.duration}
+                  onChange={handleChange}
+                  className="form-input"
+                  step="0.1"
+                  min="0.1"
+                  placeholder="0.0"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Дедлайн *
+              </label>
+              <input
+                type="date"
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleChange}
+                className="form-input"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-cyan-700 mb-1">
+                  Материал *
+                </label>
+                <select
+                  name="material"
+                  value={formData.material}
+                  onChange={handleChange}
+                  className="form-input"
+                  required
+                >
+                  <option value="">Выберите материал</option>
+                  {materials.map((material) => (
+                    <option key={material.id} value={material.name}>
+                      {material.name} ({material.quantity_printer}кг доступно)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-cyan-700 mb-1">
+                  Количество (кг) *
+                </label>
+                <input
+                  type="number"
+                  name="material_amount"
+                  value={formData.material_amount}
+                  onChange={handleChange}
+                  className="form-input"
+                  step="0.1"
+                  min="0.1"
+                  placeholder="0.0"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <button type="submit" className="btn btn-primary flex-1">
+                Создать заявку
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-      <div className="mt-4">
-        <Link href="/dashboard">
-          <button className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">
-            Назад
-          </button>
-        </Link>
-      </div>
-    </div>
+    </AuthGuard>
   );
 }

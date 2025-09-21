@@ -78,8 +78,8 @@ project_3d-main
 │     └─ __init__.cpython-313.pyc
 ├─ docker-compose.yml
 ├─ Dockerfile
-├─ Dockerfile-frontend
 ├─ my
+│  ├─ .env
 │  ├─ .next
 │  │  ├─ app-build-manifest.json
 │  │  ├─ build-manifest.json
@@ -136,20 +136,6 @@ project_3d-main
 │  │  ├─ react-loadable-manifest.json
 │  │  ├─ routes-manifest.json
 │  │  ├─ server
-│  │  │  ├─ app
-│  │  │  │  ├─ page.js
-│  │  │  │  ├─ page_client-reference-manifest.js
-│  │  │  │  ├─ users
-│  │  │  │  │  └─ auth
-│  │  │  │  │     ├─ login
-│  │  │  │  │     │  ├─ page.js
-│  │  │  │  │     │  └─ page_client-reference-manifest.js
-│  │  │  │  │     └─ register
-│  │  │  │  │        ├─ page.js
-│  │  │  │  │        └─ page_client-reference-manifest.js
-│  │  │  │  └─ _not-found
-│  │  │  │     ├─ page.js
-│  │  │  │     └─ page_client-reference-manifest.js
 │  │  │  ├─ app-paths-manifest.json
 │  │  │  ├─ interception-route-rewrite-manifest.js
 │  │  │  ├─ middleware-build-manifest.js
@@ -159,67 +145,19 @@ project_3d-main
 │  │  │  ├─ next-font-manifest.json
 │  │  │  ├─ pages-manifest.json
 │  │  │  ├─ server-reference-manifest.js
-│  │  │  ├─ server-reference-manifest.json
-│  │  │  ├─ vendor-chunks
-│  │  │  │  ├─ @swc.js
-│  │  │  │  ├─ goober.js
-│  │  │  │  ├─ next.js
-│  │  │  │  ├─ react-hot-toast.js
-│  │  │  │  └─ zustand.js
-│  │  │  └─ webpack-runtime.js
+│  │  │  └─ server-reference-manifest.json
 │  │  ├─ static
 │  │  │  ├─ chunks
-│  │  │  │  ├─ app
-│  │  │  │  │  ├─ layout.js
-│  │  │  │  │  ├─ page.js
-│  │  │  │  │  ├─ users
-│  │  │  │  │  │  └─ auth
-│  │  │  │  │  │     ├─ login
-│  │  │  │  │  │     │  └─ page.js
-│  │  │  │  │  │     └─ register
-│  │  │  │  │  │        └─ page.js
-│  │  │  │  │  └─ _not-found
-│  │  │  │  │     └─ page.js
-│  │  │  │  ├─ app-pages-internals.js
-│  │  │  │  ├─ main-app.js
-│  │  │  │  ├─ polyfills.js
-│  │  │  │  └─ webpack.js
-│  │  │  ├─ css
-│  │  │  │  └─ app
-│  │  │  │     └─ layout.css
-│  │  │  ├─ development
-│  │  │  │  ├─ _buildManifest.js
-│  │  │  │  └─ _ssgManifest.js
-│  │  │  ├─ media
-│  │  │  │  ├─ 10dadb2e82d03733-s.woff2
-│  │  │  │  ├─ 200388358b398524-s.woff2
-│  │  │  │  ├─ 34900c74a84112b6-s.woff2
-│  │  │  │  ├─ 630c17af355fa44e-s.p.woff2
-│  │  │  │  └─ 95d1875af7c44e92-s.woff2
-│  │  │  └─ webpack
-│  │  │     ├─ 051609238a719843.webpack.hot-update.json
-│  │  │     ├─ 3437037929b2339c.webpack.hot-update.json
-│  │  │     ├─ 4bce66dee4c0069e.webpack.hot-update.json
-│  │  │     ├─ 633457081244afec._.hot-update.json
-│  │  │     ├─ d3fda58ae9ecd814.webpack.hot-update.json
-│  │  │     ├─ webpack.051609238a719843.hot-update.js
-│  │  │     ├─ webpack.3437037929b2339c.hot-update.js
-│  │  │     ├─ webpack.4bce66dee4c0069e.hot-update.js
-│  │  │     └─ webpack.d3fda58ae9ecd814.hot-update.js
+│  │  │  │  └─ polyfills.js
+│  │  │  └─ development
+│  │  │     ├─ _buildManifest.js
+│  │  │     └─ _ssgManifest.js
 │  │  ├─ trace
 │  │  └─ types
-│  │     ├─ app
-│  │     │  ├─ layout.ts
-│  │     │  ├─ page.ts
-│  │     │  └─ users
-│  │     │     └─ auth
-│  │     │        ├─ login
-│  │     │        │  └─ page.ts
-│  │     │        └─ register
-│  │     │           └─ page.ts
 │  │     ├─ cache-life.d.ts
 │  │     └─ package.json
 │  ├─ app
+│  │  ├─ AuthGuard.tsx
 │  │  ├─ ClientNav.tsx
 │  │  ├─ dashboard
 │  │  │  └─ page.tsx
@@ -232,6 +170,7 @@ project_3d-main
 │  │  │     └─ [printer_id]
 │  │  │        └─ page.tsx
 │  │  ├─ layout.tsx
+│  │  ├─ LoadingSpinner.tsx
 │  │  ├─ materials
 │  │  │  ├─ create
 │  │  │  │  └─ page.tsx
@@ -239,6 +178,7 @@ project_3d-main
 │  │  │  └─ [id]
 │  │  │     └─ edit
 │  │  │        └─ page.tsx
+│  │  ├─ middleware.ts
 │  │  ├─ page.tsx
 │  │  ├─ printers
 │  │  │  ├─ create
@@ -251,6 +191,7 @@ project_3d-main
 │  │        │  └─ page.tsx
 │  │        └─ register
 │  │           └─ page.tsx
+│  ├─ Dockerfile-frontend
 │  ├─ eslint.config.mjs
 │  ├─ lib
 │  │  ├─ api.ts
@@ -269,6 +210,7 @@ project_3d-main
 │  │     ├─ flask2.svg
 │  │     ├─ list.svg
 │  │     ├─ list2.svg
+│  │     ├─ lock.png
 │  │     ├─ material.svg
 │  │     ├─ material2.svg
 │  │     ├─ printer.svg

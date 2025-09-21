@@ -14,10 +14,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   setUser: (user) => set({ user, isAuthenticated: !!user }),
-  setAuth: (auth) =>
+  setAuth: (auth) => {
+    document.cookie = `user_role=${auth.role}; path=/; max-age=86400`;
     set({
       isAuthenticated: true,
       user: { username: auth.username, role: auth.role, token: auth.token },
-    }),
-  clearAuth: () => set({ user: null, isAuthenticated: false }),
+    });
+  },
+  clearAuth: () => {
+    document.cookie = "user_role=; path=/; max-age=0";
+    document.cookie = "session_id=; path=/; max-age=0";
+    set({ user: null, isAuthenticated: false });
+  },
 }));

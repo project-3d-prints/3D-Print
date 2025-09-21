@@ -1,18 +1,20 @@
-// app/Sidebar.tsx
+// app/BurgerMenu.tsx
 "use client";
 
+import { useAuthStore } from "../lib/store";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuthStore } from "../lib/store";
 import Image from "next/image";
-import { useState } from "react";
-import BurgerMenu from "./BurgerMenu";
 
-export default function Sidebar() {
+interface BurgerMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function BurgerMenu({ isOpen, onClose }: BurgerMenuProps) {
   const { isAuthenticated, user, clearAuth } = useAuthStore();
   const pathname = usePathname();
   const router = useRouter();
-  const [isBurgerOpen, setIsBurgerOpen] = useState(false);
 
   const navItems = [
     {
@@ -82,6 +84,7 @@ export default function Sidebar() {
     clearAuth();
     document.cookie = "session_id=; Max-Age=0; path=/";
     router.push("/users/auth/login");
+    onClose();
   };
 
   const handleForbiddenClick = (itemLabel: string) => {
@@ -90,16 +93,25 @@ export default function Sidebar() {
 
   return (
     <>
-      <button
-        className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-cyan-700 text-white rounded-md"
-        onClick={() => setIsBurgerOpen(true)}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden bg-black bg-opacity-50 transition-opacity duration-300 ${
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={onClose}
+      />
+      <div
+        className={`fixed left-0 top-0 z-50 lg:hidden h-full w-80 bg-cyan-800 text-white p-4 overflow-y-auto transform transition-transform duration-300 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        ☰
-      </button>
-
-      <aside className="hidden lg:block fixed top-0 left-0 h-screen w-64 bg-cyan-700 text-cyan-50 p-4">
-        <div className="mb-8">
+        <div className="flex justify-between items-center mb-8">
           <h1 className="text-xl font-bold">3D Print</h1>
+          <button
+            onClick={onClose}
+            className="text-2xl hover:text-cyan-200 transition-colors"
+          >
+            ×
+          </button>
         </div>
 
         <nav className="space-y-2">
@@ -113,46 +125,43 @@ export default function Sidebar() {
                   userHasAccess ? (
                     <Link
                       href={item.href}
-                      className={`flex items-center space-x-2 p-2 rounded-md transition-colors duration-200 hover:bg-cyan-50 hover:text-cyan-700 group ${
-                        isActive ? "bg-cyan-50 text-cyan-700" : ""
-                      }`}
+                      className="group flex items-center space-x-3 p-3 rounded-md transition-all duration-200 hover:bg-white hover:text-cyan-800"
+                      onClick={onClose}
                     >
-                      <div className="relative w-5 h-5">
+                      <div className="relative w-6 h-6">
                         <Image
                           src={item.icon}
                           alt={item.label}
-                          width={20}
-                          height={20}
-                          className={`w-5 h-5 transition-opacity duration-200 ${
-                            isActive ? "opacity-0" : "opacity-100"
-                          } group-hover:opacity-0`}
+                          width={24}
+                          height={24}
+                          className="w-6 h-6 transition-opacity duration-200 group-hover:opacity-0"
                         />
                         <Image
                           src={item.iconActive}
                           alt={item.label}
-                          width={20}
-                          height={20}
-                          className={`absolute top-0 left-0 w-5 h-5 transition-opacity duration-200 ${
-                            isActive ? "opacity-100" : "opacity-0"
-                          } group-hover:opacity-100`}
+                          width={24}
+                          height={24}
+                          className="absolute top-0 left-0 w-6 h-6 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                         />
                       </div>
-                      <span>{item.label}</span>
+                      <span className="transition-colors group-hover:text-cyan-800">
+                        {item.label}
+                      </span>
                     </Link>
                   ) : (
                     <div
-                      className="flex items-center space-x-2 p-2 rounded-md opacity-50"
+                      className="flex items-center space-x-3 p-3 rounded-md opacity-50 transition-opacity hover:opacity-70"
                       onClick={() => handleForbiddenClick(item.label)}
                       title="Недостаточно прав"
                       style={{ cursor: "url('/img/lock.png') 16 16, auto" }}
                     >
-                      <div className="relative w-5 h-5">
+                      <div className="relative w-6 h-6">
                         <Image
                           src={item.icon}
                           alt={item.label}
-                          width={20}
-                          height={20}
-                          className="w-5 h-5"
+                          width={24}
+                          height={24}
+                          className="w-6 h-6"
                         />
                       </div>
                       <span>{item.label}</span>
@@ -160,16 +169,16 @@ export default function Sidebar() {
                   )
                 ) : (
                   <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-not-allowed"
+                    className="flex items-center space-x-3 p-3 rounded-md cursor-not-allowed opacity-50"
                     onClick={() => alert("Пожалуйста, войдите в аккаунт")}
                   >
-                    <div className="relative w-5 h-5">
+                    <div className="relative w-6 h-6">
                       <Image
                         src={item.icon}
                         alt={item.label}
-                        width={20}
-                        height={20}
-                        className="w-5 h-5"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
                       />
                     </div>
                     <span>{item.label}</span>
@@ -186,12 +195,12 @@ export default function Sidebar() {
               <span className="mb-2 text-sm">
                 {user?.username || "Неизвестный пользователь"}
               </span>
-              <span className="mb-2 text-xs text-cyan-200">
+              <span className="mb-2 text-xs text-cyan-300">
                 Роль: {user?.role}
               </span>
               <button
                 onClick={handleLogout}
-                className="text-sm hover:underline w-full text-center text-white hover:text-cyan-200"
+                className="text-sm hover:underline w-full text-center text-white hover:text-cyan-200 transition-colors"
               >
                 Выйти из аккаунта
               </button>
@@ -199,18 +208,14 @@ export default function Sidebar() {
           ) : (
             <Link
               href="/users/auth/login"
-              className="block text-center text-cyan-200 hover:text-cyan-100"
+              className="block text-center text-cyan-200 hover:text-cyan-100 transition-colors"
+              onClick={onClose}
             >
               Войти
             </Link>
           )}
         </div>
-      </aside>
-
-      <BurgerMenu
-        isOpen={isBurgerOpen}
-        onClose={() => setIsBurgerOpen(false)}
-      />
+      </div>
     </>
   );
 }

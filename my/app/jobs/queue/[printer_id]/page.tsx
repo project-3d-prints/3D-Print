@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { getQueue, getPrinters } from "../../../../lib/api";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import toast from "react-hot-toast";
+import LoadingSpinner from "../../../LoadingSpinner";
+import AuthGuard from "../../../AuthGuard";
 
 interface Job {
   id: number;
@@ -29,10 +30,15 @@ export default function JobQueue() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [day, setDay] = useState<string>("");
+  const [expandedJobs, setExpandedJobs] = useState<{ [key: number]: boolean }>(
+    {}
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
+        setIsLoading(true);
         const printersResponse = await getPrinters();
         setPrinters(printersResponse.data || []);
 
@@ -51,10 +57,14 @@ export default function JobQueue() {
             (job: Job) => job.printer_id === printerId
           );
         }
+
+        filteredJobs.sort((a: Job, b: Job) => a.priority - b.priority);
         setJobs(filteredJobs);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        toast.error("Не удалось загрузить данные");
+      } catch (err: any) {
+        console.error("Ошибка загрузки данных:", err.message);
+        toast.error("Ошибка при загрузке данных");
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchData();
@@ -71,97 +81,163 @@ export default function JobQueue() {
     return name;
   };
 
+  const getPriorityStyles = (priority: number) => {
+    switch (priority) {
+      case 1:
+        return { bg: "bg-red-500", text: "Высокий" };
+      case 2:
+        return { bg: "bg-yellow-500", text: "Средний" };
+      case 3:
+        return { bg: "bg-gray-400", text: "Низкий" };
+      default:
+        return { bg: "bg-gray-400", text: "Не указан" };
+    }
+  };
+
+  const formatDuration = (hours: number) => {
+    if (Number.isInteger(hours)) {
+      return `${hours} ч`;
+    } else {
+      const minutes = Math.round(hours * 60);
+      return `${minutes} м`;
+    }
+  };
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-cyan-800 mb-6">
-        Очередь заявок по принтеру
-      </h1>
+    <AuthGuard>
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
+          Очередь заявок
+        </h1>
 
-      {/* Фильтры */}
-      <div className="bg-white p-6 rounded-md shadow-md mb-6">
-        <h2 className="text-xl font-semibold mb-4">Выбор принтера и даты</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="printerId"
-              className="block text-sm font-medium text-cyan-700"
-            >
-              Принтер
-            </label>
-            <select
-              id="printerId"
-              value={printerId}
-              onChange={(e) => setPrinterId(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-            >
-              <option value={0}>Все принтеры</option>
-              {printers.map((printer: Printer) => (
-                <option key={printer.id} value={printer.id}>
-                  {getDisplayName(printer.name, printer.id)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor="day"
-              className="block text-sm font-medium text-cyan-700"
-            >
-              Дата
-            </label>
-            <input
-              id="day"
-              type="date"
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-cyan-700 focus:border-cyan-700"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Таблица заявок */}
-      <div className="bg-white p-6 rounded-md shadow-md">
-        {/* Заголовки таблицы */}
-        <div className="grid grid-cols-7 gap-4 mb-4 bg-gray-200 p-2 rounded-md">
-          <div className="font-semibold text-cyan-700 text-center">ID</div>
-          <div className="font-semibold text-cyan-700">Принтер</div>
-          <div className="font-semibold text-cyan-700">Пользователь</div>
-          <div className="font-semibold text-cyan-700">Дата</div>
-          <div className="font-semibold text-cyan-700">Материал</div>
-          <div className="font-semibold text-cyan-700 text-center">
-            Длительность
-          </div>
-          <div className="font-semibold text-cyan-700 text-center">
-            Приоритет
-          </div>
-        </div>
-
-        {/* Данные таблицы */}
-        {jobs.length > 0 ? (
-          jobs.map((job) => (
-            <div
-              key={job.id}
-              className="grid grid-cols-7 gap-4 p-2 border-b hover:bg-gray-50"
-            >
-              <div className="text-center">{job.id}</div>
-              <div className="truncate">
-                {printers.find((p) => p.id === job.printer_id)?.name ||
-                  job.printer_id}
-              </div>
-              <div className="truncate">{job.user || "Не указан"}</div>
-              <div className="truncate">{job.date || "Не указана"}</div>
-              <div className="truncate">{job.material || "Не указан"}</div>
-              <div className="text-center">{job.duration}</div>
-              <div className="text-center">{job.priority || "Не указан"}</div>
+        <div className="card mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-cyan-700">Фильтры</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Принтер
+              </label>
+              <select
+                value={printerId}
+                onChange={(e) => setPrinterId(Number(e.target.value))}
+                className="form-input"
+              >
+                <option value={0}>Все принтеры</option>
+                {printers.map((printer: Printer) => (
+                  <option key={printer.id} value={printer.id}>
+                    {getDisplayName(printer.name, printer.id)}
+                  </option>
+                ))}
+              </select>
             </div>
-          ))
-        ) : (
-          <div className="text-center p-4 text-gray-500 col-span-7">
-            Нет заявок.
+            <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Дата
+              </label>
+              <input
+                type="date"
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+                className="form-input"
+              />
+            </div>
           </div>
-        )}
+        </div>
+
+        <div className="card">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h2 className="text-xl font-semibold text-cyan-700 mb-2 sm:mb-0">
+              Все заявки
+            </h2>
+            <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded">
+              Найдено: {jobs.length} | Принтер:{" "}
+              {printerId === 0 ? "Все" : printerId}
+            </div>
+          </div>
+
+          <div className="grid-responsive">
+            {jobs.length > 0 ? (
+              jobs.map((job: Job) => {
+                const isExpanded = expandedJobs[job.id] || false;
+                const { bg, text } = getPriorityStyles(job.priority);
+                const printer = printers.find((p) => p.id === job.printer_id);
+
+                return (
+                  <div
+                    key={job.id}
+                    className="card cursor-pointer transition-all duration-200 hover:shadow-lg relative"
+                    onClick={() =>
+                      setExpandedJobs((prev) => ({
+                        ...prev,
+                        [job.id]: !isExpanded,
+                      }))
+                    }
+                  >
+                    <div
+                      className={`absolute left-0 top-0 bottom-0 w-1.5 ${bg} rounded-l-md`}
+                    ></div>
+
+                    <div className="ml-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium text-cyan-800 text-sm">
+                          #{job.id}
+                        </h3>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${bg} text-white`}
+                        >
+                          {text}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 text-sm">
+                        <p>
+                          <span className="font-medium">Принтер:</span>{" "}
+                          {printer
+                            ? getDisplayName(printer.name, printer.id)
+                            : job.printer_id}
+                        </p>
+                        <p>
+                          <span className="font-medium">Пользователь:</span>{" "}
+                          {job.user || "Не указан"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Длительность:</span>{" "}
+                          {formatDuration(job.duration)}
+                        </p>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p className="text-sm">
+                            <span className="font-medium">Дата:</span>{" "}
+                            {job.date || "Не указана"}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-medium">Материал:</span>{" "}
+                            {job.material || "Не указан"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <div className="text-4xl lg:text-6xl mb-4">📋</div>
+                <p className="text-gray-500 text-lg mb-2">Нет заявок</p>
+                <p className="text-gray-400 text-sm">
+                  Попробуйте выбрать другую дату или принтер
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

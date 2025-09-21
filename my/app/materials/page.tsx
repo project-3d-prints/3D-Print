@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { getMaterials } from "../../lib/api";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import AuthGuard from "../AuthGuard";
+import LoadingSpinner from "../LoadingSpinner";
 
 interface Material {
   id: number;
@@ -16,6 +18,7 @@ interface Material {
 
 export default function ListMaterials() {
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchMaterials() {
@@ -25,61 +28,95 @@ export default function ListMaterials() {
       } catch (err) {
         console.error("Error fetching materials:", err);
         toast.error("Не удалось загрузить материалы");
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchMaterials();
   }, []);
 
+  if (isLoading) {
+    return <LoadingSpinner text="Загружаем материалы..." />;
+  }
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-cyan-700 mb-6">Материалы</h1>
-      <div className="bg-white p-6 rounded-md shadow-md">
-        {/* Заголовки таблицы */}
-        <div className="grid grid-cols-6 gap-4 mb-4 bg-gray-200 p-2 rounded-md">
-          <div className="font-semibold text-cyan-700 text-center">ID</div>
-          <div className="font-semibold text-cyan-700">Название</div>
-          <div className="font-semibold text-cyan-700">Принтер</div>
-          <div className="font-semibold text-cyan-700 text-center">
-            В принтере
-          </div>
-          <div className="font-semibold text-cyan-700 text-center">
-            На складе
-          </div>
-          <div className="font-semibold text-cyan-700 text-center">
-            Действия
-          </div>
+    <AuthGuard requiredRole="глава лаборатории">
+      <div className="container mx-auto p-4">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl lg:text-3xl font-bold text-cyan-700">
+            Материалы
+          </h1>
         </div>
 
-        {/* Данные таблицы */}
-        {materials.length > 0 ? (
-          materials.map((material) => (
-            <div
-              key={material.id}
-              className="grid grid-cols-6 gap-4 p-2 border-b hover:bg-gray-50"
-            >
-              <div className="text-center">{material.id}</div>
-              <div className="truncate">{material.name}</div>
-              <div className="truncate">
-                {material.printer_id} / {material.printer_name || "Не указано"}
-              </div>
-              <div className="text-center">{material.quantity_printer}</div>
-              <div className="text-center">{material.quantity_storage}</div>
-              <div className="text-center">
-                <Link href={`/materials/${material.id}/edit`}>
-                  <button className="px-2 py-1 bg-cyan-700 text-white rounded-md hover:bg-cyan-800 text-sm">
-                    Редактировать
-                  </button>
-                </Link>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center p-4 text-gray-500 col-span-6">
-            Нет материалов.
+        <div className="card">
+          <div className="table-responsive">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="px-3 py-2 text-left text-sm font-medium text-cyan-700">
+                    ID
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-medium text-cyan-700">
+                    Название
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-medium text-cyan-700">
+                    Принтер
+                  </th>
+                  <th className="px-3 py-2 text-center text-sm font-medium text-cyan-700">
+                    В принтере (кг)
+                  </th>
+                  <th className="px-3 py-2 text-center text-sm font-medium text-cyan-700">
+                    На складе (кг)
+                  </th>
+                  <th className="px-3 py-2 text-center text-sm font-medium text-cyan-700">
+                    Действия
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {materials.map((material) => (
+                  <tr key={material.id} className="border-b hover:bg-gray-50">
+                    <td className="px-3 py-2 text-sm">{material.id}</td>
+                    <td className="px-3 py-2 text-sm font-medium">
+                      {material.name}
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      {material.printer_id} /{" "}
+                      {material.printer_name || "Не указано"}
+                    </td>
+                    <td className="px-3 py-2 text-sm text-center">
+                      {material.quantity_printer}
+                    </td>
+                    <td className="px-3 py-2 text-sm text-center">
+                      {material.quantity_storage}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <Link href={`/materials/${material.id}/edit`}>
+                        <button className="btn btn-primary text-xs px-2 py-1">
+                          Редактировать
+                        </button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+
+          {materials.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-4xl lg:text-6xl mb-4">📦</div>
+              <p className="text-gray-500 text-lg mb-2">Нет материалов</p>
+              <Link
+                href="/materials/create"
+                className="btn btn-primary text-sm"
+              >
+                Добавить первый материал
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }
-  

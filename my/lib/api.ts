@@ -1,4 +1,3 @@
-// lib/api.ts
 export interface Material {
   id?: number;
   name: string;
@@ -24,15 +23,15 @@ export interface Job {
   date: string;
   material: string;
   priority: number;
-  displayDate?: string; 
-  created_at?: string; 
+  displayDate?: string;
+  created_at?: string;
 }
 
 export interface JobCreate {
   printer_id: number;
-  duration: number; 
+  duration: number;
   deadline: string;
-  material_amount: number; 
+  material_amount: number;
   material_id: string;
 }
 
@@ -209,9 +208,17 @@ export const login = async (username: string, password: string) => {
     body: formData.toString(),
     credentials: "include",
   });
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(JSON.stringify(errorData) || "Login failed");
   }
-  return response.json();
+
+  const data = await response.json();
+
+  if (!data.role) {
+    data.role = data.user_role || data.user?.role || "студент";
+  }
+
+  return data;
 };
