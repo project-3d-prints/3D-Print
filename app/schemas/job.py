@@ -25,6 +25,7 @@ class JobOut(BaseModel):
     user: str
     date: Optional[str] = None  # Необязательное поле, строка или None
     material: str  # Имя материала, например "ABS"
+    warning: Optional[str] = None
 
     class Config:
         from_attributes = True

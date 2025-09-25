@@ -9,17 +9,18 @@ from models.material import Material  # Импорт модели Material
 from schemas.job import JobCreate, JobOut
 from dependencies import get_current_user
 from typing import List, Annotated
+from models.printer import Printer 
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Query
 from utils.sort_jobs import sort_jobs
 import logging
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+
 
 @router.post("/", response_model=JobOut)
 async def create_job(
@@ -29,111 +30,104 @@ async def create_job(
 ) -> JobOut:
     priority_dct = {"глава лаборатории": 1, "учитель": 2, "студент": 3}
     priority = priority_dct.get(current_user.role.value)
-
     WORKING_HOURS_PER_DAY = 13  
 
-    result = await db.execute(
-        select(Job).where(Job.printer_id == job.printer_id)
-    )
-    all_jobs = result.scalars().all()
-
-    jobs_by_date = defaultdict(list)
-    for j in all_jobs:
-        jobs_by_date[j.deadline].append(j)
-    logger.info(f"Jobs by date initialized: {dict(jobs_by_date)}")
+    printer_result = await db.execute(select(Printer).where(Printer.id == job.printer_id))
+    printer = printer_result.scalar_one_or_none()
+    if not printer:
+        raise HTTPException(status_code=404, detail=f"Принтер {job.printer_id} не найден")
 
     today = date.today()
-    logger.info(f"Current date (today): {today}, type: {type(today)}")
-    max_search_days = 30 
+    max_search_days = 30
+    jobs_by_date = defaultdict(list)
+    result = await db.execute(select(Job).where(Job.printer_id == job.printer_id))
+    all_jobs = result.scalars().all()
+    for j in all_jobs:
+        jobs_by_date[j.deadline].append(j)
 
-    # Проверяем дедлайн с детальной отладкой
     selected_day = None
     try:
-        logger.info(f"Received deadline: {job.deadline}, type: {type(job.deadline)}")
         user_deadline = job.deadline if isinstance(job.deadline, date) else date.fromisoformat(job.deadline.strip())
-        logger.info(f"Processed user_deadline: {user_deadline}, type: {type(user_deadline)}")
-        logger.info(f"Comparing: user_deadline ({user_deadline}) > today ({today})")
         if user_deadline > today:
-            existing_jobs = jobs_by_date.get(user_deadline, [])
-            logger.info(f"Existing jobs on {user_deadline}: {[(j.id, j.duration) for j in existing_jobs]}")
-            total_duration = sum(j.duration for j in existing_jobs)
-            logger.info(f"Total duration on {user_deadline}: {total_duration}, new duration: {job.duration}, limit: {WORKING_HOURS_PER_DAY}")
+            total_duration = sum(j.duration for j in jobs_by_date.get(user_deadline, []))
             if total_duration + job.duration <= WORKING_HOURS_PER_DAY:
                 selected_day = user_deadline
-                logger.info(f"Selected day set to user_deadline: {selected_day}")
             else:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Недостаточно времени на {user_deadline} для принтера {job.printer_id} (свободно {WORKING_HOURS_PER_DAY - total_duration} часов)"
+                    detail=f"Недостаточно времени на {user_deadline} для принтера {job.printer_id}"
                 )
         else:
-            logger.error(f"Deadline validation failed: user_deadline {user_deadline} <= today {today}")
             raise HTTPException(status_code=400, detail=f"Дедлайн {user_deadline} должен быть в будущем")
-    except ValueError as e:
-        logger.error(f"ValueError in deadline parsing: {e}, deadline: {job.deadline}")
-        raise HTTPException(status_code=400, detail="Неверный формат дедлайна. Используйте YYYY-MM-DD")
-    except Exception as e:
-        logger.error(f"Unexpected error during deadline validation: {e}")
-        raise HTTPException(status_code=400, detail=f"Ошибка обработки дедлайна: {str(e)}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Неверный формат дедлайна (YYYY-MM-DD)")
 
-    # Fallback на следующий доступный день только если selected_day не установлен
     if not selected_day:
-        logger.info("No valid user_deadline, searching for next available day")
         for offset in range(max_search_days):
             candidate_day = today + timedelta(days=offset)
-            existing_jobs = jobs_by_date.get(candidate_day, [])
-            total_duration = sum(j.duration for j in existing_jobs)
-            logger.info(f"Checking day {candidate_day}: total_duration {total_duration}, new duration {job.duration}")
+            total_duration = sum(j.duration for j in jobs_by_date.get(candidate_day, []))
             if total_duration + job.duration <= WORKING_HOURS_PER_DAY:
                 selected_day = candidate_day
-                logger.info(f"Selected next available day: {selected_day}")
                 break
-
     if not selected_day:
-        raise HTTPException(
-            status_code=400,
-            detail="Нет свободного дня в ближайшие 30 дней для размещения заявки"
-        )
+        raise HTTPException(status_code=400, detail="Нет свободного дня в ближайшие 30 дней")
 
-    # Проверка наличия материала с приведением типа
-    material_id = int(job.material_id)  # Приводим material_id к int
-    logger.info(f"Checking material with ID: {material_id}, type: {type(material_id)}")
+    material_id = int(job.material_id)
     material_result = await db.execute(select(Material).where(Material.id == material_id))
     material = material_result.scalar_one_or_none()
     if not material:
-        raise HTTPException(status_code=400, detail=f"Материал с ID {material_id} не найден")
+        raise HTTPException(status_code=404, detail=f"Материал {material_id} не найден")
+
+    if printer.quantity_material < job.material_amount:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Недостаточно материала в принтере {printer.name}. "
+                   f"Доступно: {printer.quantity_material}, требуется: {job.material_amount}"
+        )
+    printer.quantity_material -= job.material_amount
+    db.add(printer)
 
     db_job = Job(
         user_id=current_user.id,
         printer_id=job.printer_id,
-        material_id=material_id,  # Сохраняем ID материала
+        material_id=material_id,
         duration=job.duration,
         deadline=selected_day,
         created_at=datetime.utcnow().date(),
         material_amount=job.material_amount,
         priority=priority
     )
-
     db.add(db_job)
     await db.commit()
     await db.refresh(db_job)
 
-    # Заполняем JobOut с правильным материалом
+    warning = None
+    CRITICAL_LEVEL = 10
+    if printer.quantity_material < CRITICAL_LEVEL:
+        warning = f"Внимание: в принтере {printer.name} осталось мало материала ({printer.quantity_material})!"
+
     job_out = JobOut(
         id=db_job.id,
         user_id=db_job.user_id,
         printer_id=db_job.printer_id,
         duration=db_job.duration,
-        deadline=db_job.deadline.isoformat(),  # Преобразуем date в строку
-        created_at=db_job.created_at.isoformat(),  # Преобразуем date в строку
+        deadline=db_job.deadline.isoformat(),
+        created_at=db_job.created_at.isoformat(),
         material_amount=db_job.material_amount,
         priority=db_job.priority,
         user=current_user.username,
-        date=db_job.deadline.isoformat() if db_job.deadline else None,  # Преобразуем date в строку или None
-        material=material.name if material else "Не указан"  # Используем имя материала
+        date=db_job.deadline.isoformat(),
+        material=material.name,
+        warning=warning
     )
 
+    if warning:
+        job_out_dict = job_out.dict()
+        job_out_dict["warning"] = warning
+        return job_out_dict
+
     return job_out
+
 
 @router.get("/queue/{printer_id}", response_model=List[JobOut], summary="Получить график заявок для принтера")
 async def get_queue(
