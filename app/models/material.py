@@ -9,7 +9,6 @@ class Material(Base):  # Описывает материал для печати
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
     printer_id = Column(Integer, ForeignKey("printers.id"), nullable=False)
-    quantity_printer = Column(Float, nullable=False)  # Количество в принтере
     quantity_storage = Column(Float, nullable=False)  # Количество на складе
 
     printer = relationship("Printer", back_populates="materials")
