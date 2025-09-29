@@ -10,9 +10,6 @@ import LoadingSpinner from "../LoadingSpinner";
 interface Material {
   id: number;
   name: string;
-  printer_id: number;
-  printer_name: string | null;
-  quantity_printer: number;
   quantity_storage: number;
 }
 
@@ -59,14 +56,8 @@ export default function ListMaterials() {
                   <th className="px-3 py-2 text-left text-sm font-medium text-cyan-700">
                     Название
                   </th>
-                  <th className="px-3 py-2 text-left text-sm font-medium text-cyan-700">
-                    Принтер
-                  </th>
                   <th className="px-3 py-2 text-center text-sm font-medium text-cyan-700">
-                    В принтере (кг)
-                  </th>
-                  <th className="px-3 py-2 text-center text-sm font-medium text-cyan-700">
-                    На складе (кг)
+                    На складе (г/мл)
                   </th>
                   <th className="px-3 py-2 text-center text-sm font-medium text-cyan-700">
                     Действия
@@ -79,13 +70,6 @@ export default function ListMaterials() {
                     <td className="px-3 py-2 text-sm">{material.id}</td>
                     <td className="px-3 py-2 text-sm font-medium">
                       {material.name}
-                    </td>
-                    <td className="px-3 py-2 text-sm">
-                      {material.printer_id} /{" "}
-                      {material.printer_name || "Не указано"}
-                    </td>
-                    <td className="px-3 py-2 text-sm text-center">
-                      {material.quantity_printer}
                     </td>
                     <td className="px-3 py-2 text-sm text-center">
                       {material.quantity_storage}

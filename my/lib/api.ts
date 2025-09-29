@@ -1,16 +1,15 @@
 export interface Material {
   id?: number;
   name: string;
-  printer_id: number;
-  quantity_printer: number;
   quantity_storage: number;
 }
 
 export interface Printer {
   id: number;
   name: string;
-  status: string;
-  owner: string;
+  type: "plastic" | "resin";
+  quantity_material: number;
+  username: string;
 }
 
 export interface Job {
@@ -23,6 +22,7 @@ export interface Job {
   date: string;
   material: string;
   priority: number;
+  warning?: string;
   displayDate?: string;
   created_at?: string;
 }
@@ -88,7 +88,7 @@ export const createMaterial = async (material: Omit<Material, "id">) => {
 
 export const updateMaterial = async (
   id: number,
-  updates: { quantity_printer: number; quantity_storage: number }
+  updates: { quantity_storage: number }
 ) => {
   try {
     const response = await fetch(`http://localhost:8000/materials/${id}`, {
@@ -125,8 +125,9 @@ export const getPrinters = async () => {
 
 export const createPrinter = async (printer: {
   name: string;
-  status: string;
-  owner: string;
+  type: "plastic" | "resin";
+  quantity_material: number;
+  username: string;
 }) => {
   try {
     const response = await fetch("http://localhost:8000/printers", {

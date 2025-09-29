@@ -15,13 +15,15 @@ interface Job {
   duration: number;
   priority: number;
   printer_id: number;
+  warning?: string;
 }
 
 interface Printer {
   id: number;
   name: string;
-  status: string;
-  owner: string;
+  type: "plastic" | "resin";
+  quantity_material: number;
+  username: string;
 }
 
 export default function JobQueue() {
@@ -129,7 +131,7 @@ export default function JobQueue() {
                 <option value={0}>Все принтеры</option>
                 {printers.map((printer: Printer) => (
                   <option key={printer.id} value={printer.id}>
-                    {getDisplayName(printer.name, printer.id)}
+                    {getDisplayName(printer.name, printer.id)} ({printer.type})
                   </option>
                 ))}
               </select>
@@ -155,7 +157,12 @@ export default function JobQueue() {
             </h2>
             <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded">
               Найдено: {jobs.length} | Принтер:{" "}
-              {printerId === 0 ? "Все" : printerId}
+              {printerId === 0
+                ? "Все"
+                : getDisplayName(
+                    printers.find((p) => p.id === printerId)?.name || "",
+                    printerId
+                  )}
             </div>
           </div>
 
@@ -220,6 +227,14 @@ export default function JobQueue() {
                             <span className="font-medium">Материал:</span>{" "}
                             {job.material || "Не указан"}
                           </p>
+                          {job.warning && (
+                            <p className="text-sm text-red-600">
+                              <span className="font-medium">
+                                Предупреждение:
+                              </span>{" "}
+                              {job.warning}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>

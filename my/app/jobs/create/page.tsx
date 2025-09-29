@@ -12,14 +12,14 @@ import AuthGuard from "../../AuthGuard";
 interface Printer {
   id: number;
   name: string;
-  status: string;
-  owner: string;
+  type: "plastic" | "resin";
+  quantity_material: number;
+  username: string;
 }
 
 interface Material {
   id: number;
   name: string;
-  quantity_printer: number;
   quantity_storage: number;
 }
 
@@ -78,12 +78,12 @@ export default function CreateJob() {
       toast.error("Выберите материал из списка!");
       return;
     }
-    if (
-      selectedMaterial.quantity_printer <
-        parseFloat(formData.material_amount) &&
-      selectedMaterial.quantity_storage < parseFloat(formData.material_amount)
-    ) {
-      toast.error("Недостаточно материала на принтере или складе!");
+
+    const selectedPrinter = printers.find(
+      (p) => p.id === parseInt(formData.printer_id)
+    );
+    if (!selectedPrinter) {
+      toast.error("Выберите принтер из списка!");
       return;
     }
 
@@ -96,18 +96,17 @@ export default function CreateJob() {
         material_id: selectedMaterial.id.toString(),
       };
 
-      await createJob(jobData);
+      const response = await createJob(jobData);
+      if (response.warning) {
+        toast.error(response.warning, { duration: 7000 });
+      }
       toast.success("Заявка успешно создана!");
       router.push("/jobs/queue/0");
     } catch (error) {
       console.error("Error creating job:", error);
       let errorMessage = "Произошла непредвиденная ошибка.";
-      if (error instanceof AxiosError) {
-        if (error.response?.data?.detail) {
-          errorMessage = error.response.data.detail;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
+      if (error instanceof AxiosError && error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
@@ -145,7 +144,8 @@ export default function CreateJob() {
                   <option value="">Выберите принтер</option>
                   {printers.map((printer) => (
                     <option key={printer.id} value={printer.id.toString()}>
-                      {printer.name}
+                      {printer.name} ({printer.type},{" "}
+                      {printer.quantity_material} г/мл)
                     </option>
                   ))}
                 </select>
@@ -198,7 +198,8 @@ export default function CreateJob() {
                   <option value="">Выберите материал</option>
                   {materials.map((material) => (
                     <option key={material.id} value={material.name}>
-                      {material.name} ({material.quantity_printer}кг доступно)
+                      {material.name} ({material.quantity_storage} г/мл на
+                      складе)
                     </option>
                   ))}
                 </select>
@@ -206,7 +207,7 @@ export default function CreateJob() {
 
               <div>
                 <label className="block text-sm font-medium text-cyan-700 mb-1">
-                  Количество (кг) *
+                  Количество (г/мл) *
                 </label>
                 <input
                   type="number"
