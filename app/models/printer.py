@@ -25,4 +25,3 @@ class Printer(Base):
     quantity_material = Column(Integer, nullable = False)
 
     jobs = relationship("Job", back_populates="printer")
-    materials = relationship("Material", back_populates="printer")
