@@ -2,35 +2,38 @@
 
 import { useState, useEffect } from "react";
 import { getQueue, getPrinters } from "../../../../lib/api";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../../../LoadingSpinner";
 import AuthGuard from "../../../AuthGuard";
 
-interface Job {
-  id: number;
-  user: string;
-  date: string;
-  material: string;
-  duration: number;
-  priority: number;
-  printer_id: number;
-  warning?: string;
-}
-
-interface Printer {
-  id: number;
-  name: string;
-  type: "plastic" | "resin";
-  quantity_material: number;
-  username: string;
-}
-
 export default function JobQueue() {
   const params = useParams();
+  const router = useRouter();
   const [printerId, setPrinterId] = useState<number>(0);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [printers, setPrinters] = useState<Printer[]>([]);
+  const [jobs, setJobs] = useState<
+    {
+      id: number;
+      user: string;
+      date: string;
+      material_id: number;
+      duration: number;
+      priority: number;
+      printer_id: number;
+      material_amount: number;
+      warning?: string;
+      material?: string; // Изменено на строку
+    }[]
+  >([]);
+  const [printers, setPrinters] = useState<
+    {
+      id: number;
+      name: string;
+      type: string;
+      quantity_material: number;
+      username: string;
+    }[]
+  >([]);
   const [day, setDay] = useState<string>("");
   const [expandedJobs, setExpandedJobs] = useState<{ [key: number]: boolean }>(
     {}
@@ -42,41 +45,52 @@ export default function JobQueue() {
       try {
         setIsLoading(true);
         const printersResponse = await getPrinters();
-        setPrinters(printersResponse.data || []);
+        console.log("Fetched printers:", printersResponse.data);
+        const fetchedPrinters = printersResponse.data || [];
+        setPrinters(fetchedPrinters);
 
+        // Устанавливаем printerId из params
         const paramPrinterId = Number(params.printer_id);
-        if (
-          paramPrinterId &&
-          printersResponse.data.some((p: Printer) => p.id === paramPrinterId)
-        ) {
-          setPrinterId(paramPrinterId);
+        const selectedPrinterId = fetchedPrinters.some(
+          (p: any) => p.id === paramPrinterId
+        )
+          ? paramPrinterId
+          : 0;
+
+        // Если printerId из params некорректен, перенаправляем на /jobs/queue/0
+        if (paramPrinterId !== selectedPrinterId) {
+          router.replace(`/jobs/queue/0`);
+          setPrinterId(0);
+        } else {
+          setPrinterId(selectedPrinterId);
         }
 
-        const response = await getQueue(printerId || 0, day);
-        let filteredJobs = response.data || [];
-        if (printerId !== 0) {
-          filteredJobs = filteredJobs.filter(
-            (job: Job) => job.printer_id === printerId
-          );
-        }
-
-        filteredJobs.sort((a: Job, b: Job) => a.priority - b.priority);
-        setJobs(filteredJobs);
+        // Запрашиваем заявки
+        const response = await getQueue(selectedPrinterId, day);
+        console.log("Fetched jobs:", response.data);
+        // Сортировка по приоритету
+        const sortedJobs = response.data.sort(
+          (a: any, b: any) => a.priority - b.priority
+        );
+        setJobs(sortedJobs);
+        console.log("Final jobs:", sortedJobs);
       } catch (err: any) {
         console.error("Ошибка загрузки данных:", err.message);
         toast.error("Ошибка при загрузке данных");
+        setJobs([]);
+        setPrinters([]);
       } finally {
         setIsLoading(false);
       }
     }
     fetchData();
-  }, [params.printer_id, printerId, day]);
+  }, [params.printer_id, day, router]);
 
   const getDisplayName = (name: string, id: number) => {
-    const nameCount = printers.filter((p: Printer) => p.name === name).length;
+    const nameCount = printers.filter((p) => p.name === name).length;
     if (nameCount > 1) {
       const idCount = printers.filter(
-        (p: Printer) => p.name === name && p.id <= id
+        (p) => p.name === name && p.id <= id
       ).length;
       return `${name} ${idCount}`;
     }
@@ -105,6 +119,11 @@ export default function JobQueue() {
     }
   };
 
+  const handlePrinterChange = (newPrinterId: number) => {
+    setPrinterId(newPrinterId);
+    router.push(`/jobs/queue/${newPrinterId}`);
+  };
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -125,13 +144,15 @@ export default function JobQueue() {
               </label>
               <select
                 value={printerId}
-                onChange={(e) => setPrinterId(Number(e.target.value))}
+                onChange={(e) => handlePrinterChange(Number(e.target.value))}
                 className="form-input"
               >
                 <option value={0}>Все принтеры</option>
-                {printers.map((printer: Printer) => (
+                {printers.map((printer) => (
                   <option key={printer.id} value={printer.id}>
-                    {getDisplayName(printer.name, printer.id)} ({printer.type})
+                    {getDisplayName(printer.name, printer.id)} (
+                    {printer.type === "plastic" ? "Пластик" : "Смола"},{" "}
+                    {printer.quantity_material} г/мл)
                   </option>
                 ))}
               </select>
@@ -155,7 +176,7 @@ export default function JobQueue() {
             <h2 className="text-xl font-semibold text-cyan-700 mb-2 sm:mb-0">
               Все заявки
             </h2>
-            <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded">
+            <div className="text-sm text-cyan-600 bg-gray-100 px-3 py-1 rounded">
               Найдено: {jobs.length} | Принтер:{" "}
               {printerId === 0
                 ? "Все"
@@ -168,7 +189,7 @@ export default function JobQueue() {
 
           <div className="grid-responsive">
             {jobs.length > 0 ? (
-              jobs.map((job: Job) => {
+              jobs.map((job) => {
                 const isExpanded = expandedJobs[job.id] || false;
                 const { bg, text } = getPriorityStyles(job.priority);
                 const printer = printers.find((p) => p.id === job.printer_id);
@@ -205,7 +226,7 @@ export default function JobQueue() {
                           <span className="font-medium">Принтер:</span>{" "}
                           {printer
                             ? getDisplayName(printer.name, printer.id)
-                            : job.printer_id}
+                            : `ID: ${job.printer_id}`}
                         </p>
                         <p>
                           <span className="font-medium">Пользователь:</span>{" "}
@@ -225,7 +246,13 @@ export default function JobQueue() {
                           </p>
                           <p className="text-sm">
                             <span className="font-medium">Материал:</span>{" "}
-                            {job.material || "Не указан"}
+                            {job.material || `ID: ${job.material_id}`}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-medium">
+                              Количество материала:
+                            </span>{" "}
+                            {job.material_amount} г/мл
                           </p>
                           {job.warning && (
                             <p className="text-sm text-red-600">

@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload  # Импорт selectinload
 from database import get_db
 from models.material import Material
-from models.printer import Printer
 from schemas.material import MaterialCreate, MaterialOut, MaterialUpdate
 from typing import List, Annotated
 import logging
@@ -24,6 +22,7 @@ async def add_material(
     db.add(db_material)
     await db.commit()
     await db.refresh(db_material)
+    logger.info(f"Material {db_material.id} created successfully")
     return db_material
 
 # Возвращает список материалов
@@ -31,11 +30,9 @@ async def add_material(
 async def list_materials(
     db: Annotated[AsyncSession, Depends(get_db)]
 ) -> List[MaterialOut]:
-    result = await db.execute(select(Material).join(Printer).options(selectinload(Material.printer)))
+    result = await db.execute(select(Material))
     materials = result.scalars().all()
-    for material in materials:
-        if material.printer:
-            material.printer_name = material.printer.name  # Устанавливаем название принтера
+    logger.info(f"Fetched {len(materials)} materials")
     return materials
 
 # Возвращает конкретный материал
@@ -44,12 +41,11 @@ async def get_material(
     material_id: int,
     db: Annotated[AsyncSession, Depends(get_db)]
 ) -> MaterialOut:
-    result = await db.execute(select(Material).where(Material.id == material_id).join(Printer).options(selectinload(Material.printer)))
+    result = await db.execute(select(Material).where(Material.id == material_id))
     material = result.scalar_one_or_none()
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
-    if material.printer:
-        material.printer_name = material.printer.name  # Устанавливаем название принтера
+    logger.info(f"Fetched material {material_id}")
     return material
 
 # Обновляет материал

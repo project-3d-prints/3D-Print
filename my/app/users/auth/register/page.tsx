@@ -38,7 +38,7 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-cyan-800">3D Print</h1>
+          <h1 className="text-3xl font-bold text-cyan-800">ЗD Print</h1>
           <h2 className="mt-2 text-2xl font-bold text-cyan-900">Регистрация</h2>
         </div>
 

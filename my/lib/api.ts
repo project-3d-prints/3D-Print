@@ -1,7 +1,10 @@
+"use client";
+
 export interface Material {
   id?: number;
   name: string;
   quantity_storage: number;
+  type?: "plastic" | "resin";
 }
 
 export interface Printer {
@@ -18,13 +21,12 @@ export interface Job {
   duration: number;
   deadline: string;
   material_amount: number;
+  material_id: number;
   user: string;
   date: string;
-  material: string;
   priority: number;
   warning?: string;
-  displayDate?: string;
-  created_at?: string;
+  material?: string; // Изменено на строку
 }
 
 export interface JobCreate {
@@ -37,15 +39,21 @@ export interface JobCreate {
 
 export const getMaterials = async () => {
   try {
-    const response = await fetch("http://localhost:8000/materials/", {
+    console.log("Fetching materials from http://localhost:8000/materials");
+    const response = await fetch("http://localhost:8000/materials", {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok)
-      throw new Error((await response.text()) || "Failed to fetch materials");
+    console.log("Materials response status:", response.status);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Materials error response:", errorText);
+      throw new Error(errorText || "Failed to fetch materials");
+    }
     const data = await response.json();
-    return Array.isArray(data) ? { data } : data;
+    console.log("Materials data:", data);
+    return Array.isArray(data) ? { data } : { data: [data] };
   } catch (error) {
     console.error("Error fetching materials:", error);
     return { data: [] };
@@ -59,27 +67,39 @@ export const getMaterial = async (id: number) => {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok)
-      throw new Error((await response.text()) || "Failed to fetch material");
+    if (!response.ok) throw new Error("Failed to fetch material");
     const data = await response.json();
-    return { data };
+    return {
+      data: {
+        ...data,
+        type: data.name.toLowerCase().includes("pla") ? "plastic" : "resin",
+      },
+    };
   } catch (error) {
     console.error("Error fetching material:", error);
     throw error;
   }
 };
 
-export const createMaterial = async (material: Omit<Material, "id">) => {
+export const createMaterial = async (
+  material: Omit<Material, "id" | "type">
+) => {
   try {
     const response = await fetch("http://localhost:8000/materials/", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(material),
+      body: JSON.stringify({
+        name: material.name,
+        quantity_storage: material.quantity_storage,
+      }),
     });
-    if (!response.ok)
-      throw new Error((await response.text()) || "Failed to create material");
-    return await response.json();
+    if (!response.ok) throw new Error("Failed to create material");
+    const data = await response.json();
+    return {
+      ...data,
+      type: material.name.toLowerCase().includes("pla") ? "plastic" : "resin",
+    };
   } catch (error) {
     console.error("Error creating material:", error);
     throw error;
@@ -88,7 +108,7 @@ export const createMaterial = async (material: Omit<Material, "id">) => {
 
 export const updateMaterial = async (
   id: number,
-  updates: { quantity_storage: number }
+  updates: { quantity_storage: number | null }
 ) => {
   try {
     const response = await fetch(`http://localhost:8000/materials/${id}`, {
@@ -97,9 +117,9 @@ export const updateMaterial = async (
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
-    if (!response.ok)
-      throw new Error((await response.text()) || "Failed to update material");
-    return await response.json();
+    if (!response.ok) throw new Error("Failed to update material");
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error("Error updating material:", error);
     throw error;
@@ -113,13 +133,38 @@ export const getPrinters = async () => {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok)
-      throw new Error((await response.text()) || "Failed to fetch printers");
+    if (!response.ok) throw new Error("Failed to fetch printers");
     const data = await response.json();
-    return Array.isArray(data) ? { data } : data;
+    return Array.isArray(data) ? { data } : { data: [data] };
   } catch (error) {
     console.error("Error fetching printers:", error);
     return { data: [] };
+  }
+};
+
+export const getPrinter = async (printerId: number) => {
+  try {
+    console.log(
+      `Fetching printer ${printerId} from http://localhost:8000/printers/${printerId}`
+    );
+    const response = await fetch(
+      `http://localhost:8000/printers/${printerId}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    console.log("Printer response status:", response.status);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to fetch printer");
+    }
+    const data = await response.json();
+    return { data };
+  } catch (error) {
+    console.error("Error fetching printer:", error);
+    throw error;
   }
 };
 
@@ -136,8 +181,7 @@ export const createPrinter = async (printer: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(printer),
     });
-    if (!response.ok)
-      throw new Error((await response.text()) || "Failed to create printer");
+    if (!response.ok) throw new Error("Failed to create printer");
     return await response.json();
   } catch (error) {
     console.error("Error creating printer:", error);
@@ -145,38 +189,92 @@ export const createPrinter = async (printer: {
   }
 };
 
+export const updatePrinterQuantity = async ({
+  printer_id,
+  quantity_printer,
+}: {
+  printer_id: number;
+  quantity_printer: number;
+}) => {
+  try {
+    console.log(
+      `Updating printer ${printer_id} with quantity ${quantity_printer}`
+    );
+    const response = await fetch("http://localhost:8000/printers/", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ printer_id, quantity_printer }),
+    });
+    console.log("Printer update response status:", response.status);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to update printer quantity");
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error updating printer quantity:", error);
+    throw error;
+  }
+};
+
 export const getQueue = async (printerId: number, day: string) => {
   const url = `/jobs/queue/${printerId}${day ? `?day=${day}` : ""}`;
-  const response = await fetch(`http://localhost:8000${url}`, {
-    method: "GET",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-  });
-  if (!response.ok)
-    throw new Error((await response.text()) || "Failed to fetch queue");
-  const data = await response.json();
-  return Array.isArray(data) ? { data } : data;
+  try {
+    console.log(`Fetching queue from http://localhost:8000${url}`);
+    const response: Response = await fetch(`http://localhost:8000${url}`, {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    console.log("Queue response status:", response.status);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Queue error response:", errorText);
+      throw new Error(errorText || "Failed to fetch queue");
+    }
+    const data: Job[] = await response.json();
+    console.log("Queue response data:", data);
+    // Обрабатываем material как строку
+    const transformedData = data.map((job) => {
+      console.log(`Material data for job ${job.id}:`, job.material);
+      return {
+        ...job,
+        material:
+          typeof job.material === "string"
+            ? job.material
+            : `Material ID: ${job.material_id}`,
+      };
+    });
+    console.log("Transformed jobs:", transformedData);
+    return { data: transformedData };
+  } catch (error) {
+    console.error("Error fetching queue:", error);
+    throw error;
+  }
 };
 
 export const createJob = async (job: JobCreate) => {
   try {
-    console.log("Sending to server:", job);
+    console.log("Sending POST /jobs/ with data:", job);
     const response = await fetch("http://localhost:8000/jobs/", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(job),
     });
+    console.log("Create job response status:", response.status);
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Server error response:", errorText);
+      console.log("Create job error response:", errorText);
       throw new Error(errorText || "Failed to create job");
     }
     const data = await response.json();
-    console.log("Successful job creation:", data);
+    console.log("Create job response data:", data);
     return data;
   } catch (error) {
-    console.error("Full error:", error);
+    console.error("Error creating job:", error);
     throw error;
   }
 };
@@ -186,40 +284,36 @@ export const register = async (data: {
   role: string;
   password: string;
 }) => {
-  const response = await fetch("http://localhost:8000/users/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || "Регистрация не удалась");
+  try {
+    const response = await fetch("http://localhost:8000/users/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Registration failed");
+    return await response.json();
+  } catch (error) {
+    console.error("Error registering:", error);
+    throw error;
   }
-  return response.json();
 };
 
 export const login = async (username: string, password: string) => {
   const formData = new URLSearchParams();
   formData.append("username", username);
   formData.append("password", password);
-
-  const response = await fetch("http://localhost:8000/users/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: formData.toString(),
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(JSON.stringify(errorData) || "Login failed");
+  try {
+    const response = await fetch("http://localhost:8000/users/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Login failed");
+    const data = await response.json();
+    return { ...data, role: data.role || "студент" };
+  } catch (error) {
+    console.error("Error logging in:", error);
+    throw error;
   }
-
-  const data = await response.json();
-
-  if (!data.role) {
-    data.role = data.user_role || data.user?.role || "студент";
-  }
-
-  return data;
 };

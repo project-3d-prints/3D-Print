@@ -1,55 +1,62 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { updateMaterial, getMaterial } from "../../../../lib/api";
+import { getPrinter, updatePrinterQuantity } from "../../../../lib/api";
 import toast from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
 import AuthGuard from "../../../AuthGuard";
 import LoadingSpinner from "../../../LoadingSpinner";
 import Link from "next/link";
 
-export default function EditMaterial() {
+export default function EditPrinter() {
   const params = useParams();
   const id = Number(params.id);
   const router = useRouter();
   const [name, setName] = useState("");
-  const [quantityStorage, setQuantityStorage] = useState(0.0);
+  const [type, setType] = useState<"plastic" | "resin">("plastic");
+  const [quantityMaterial, setQuantityMaterial] = useState(0);
+  const [warning, setWarning] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchMaterial() {
+    async function fetchPrinter() {
       try {
         setIsLoading(true);
-        const response = await getMaterial(id);
-        const { name, quantity_storage } = response.data;
+        const response = await getPrinter(id);
+        const { name, type, quantity_material, warning } = response.data;
         setName(name);
-        setQuantityStorage(quantity_storage);
+        setType(type);
+        setQuantityMaterial(quantity_material);
+        setWarning(warning || null);
       } catch (error) {
-        console.error("Error fetching material:", error);
-        setError("Не удалось найти материал");
-        toast.error("Не удалось найти материал");
+        console.error("Error fetching printer:", error);
+        setError("Не удалось найти принтер");
+        toast.error("Не удалось найти принтер");
       } finally {
         setIsLoading(false);
       }
     }
-    fetchMaterial();
+    fetchPrinter();
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateMaterial(id, { quantity_storage: quantityStorage });
-      toast.success("Материал успешно обновлен!");
-      router.push("/materials");
+      await updatePrinterQuantity({
+        printer_id: id,
+        quantity_printer: quantityMaterial,
+      });
+      toast.success("Принтер успешно обновлен!");
+      router.push("/printers");
     } catch (error) {
-      console.error("Error updating material:", error);
-      toast.error("Не удалось обновить материал");
+      console.error("Error updating printer:", error);
+      toast.error("Не удалось обновить принтер");
     }
   };
 
   if (isLoading) {
-    return <LoadingSpinner text="Загружаем материал..." />;
+    return <LoadingSpinner text="Загружаем принтер..." />;
   }
 
   if (error) {
@@ -57,7 +64,7 @@ export default function EditMaterial() {
       <AuthGuard requiredRole="глава лаборатории">
         <div className="container mx-auto p-4">
           <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
-            Редактирование материала
+            Редактирование принтера
           </h1>
           <div className="card text-center py-8">
             <div className="text-4xl lg:text-6xl mb-4">⚠️</div>
@@ -76,7 +83,7 @@ export default function EditMaterial() {
       <div className="container mx-auto p-4">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800">
-            Редактирование материала
+            Редактирование принтера
           </h1>
         </div>
 
@@ -84,7 +91,7 @@ export default function EditMaterial() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-cyan-700 mb-1">
-                Название материала
+                Название принтера
               </label>
               <input
                 type="text"
@@ -96,14 +103,26 @@ export default function EditMaterial() {
 
             <div>
               <label className="block text-sm font-medium text-cyan-700 mb-1">
-                Количество на складе (г/мл) *
+                Тип принтера
+              </label>
+              <input
+                type="text"
+                value={type === "plastic" ? "Пластик" : "Смола"}
+                readOnly
+                className="form-input bg-gray-100 cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Количество материала в принтере (г/мл) *
               </label>
               <input
                 type="number"
                 step="0.1"
-                value={quantityStorage}
+                value={quantityMaterial}
                 onChange={(e) =>
-                  setQuantityStorage(parseFloat(e.target.value) || 0.0)
+                  setQuantityMaterial(parseFloat(e.target.value) || 0)
                 }
                 className="form-input"
                 min="0"
@@ -111,13 +130,19 @@ export default function EditMaterial() {
               />
             </div>
 
+            {warning && (
+              <div className="text-red-600 text-sm">
+                <span className="font-medium">Предупреждение:</span> {warning}
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <button type="submit" className="btn btn-primary flex-1">
                 Сохранить изменения
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/materials")}
+                onClick={() => router.push("/printers")}
                 className="btn btn-secondary"
               >
                 Отмена

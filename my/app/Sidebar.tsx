@@ -99,7 +99,7 @@ export default function Sidebar() {
 
       <aside className="hidden lg:block fixed top-0 left-0 h-screen w-64 bg-cyan-700 text-cyan-50 p-4">
         <div className="mb-8">
-          <h1 className="text-xl font-bold">3D Print</h1>
+          <h1 className="text-xl font-bold">ЗD Print</h1>
         </div>
 
         <nav className="space-y-2">

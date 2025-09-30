@@ -7,10 +7,10 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../../lib/store";
 import AuthGuard from "../../AuthGuard";
 import LoadingSpinner from "../../LoadingSpinner";
-import Link from "next/link";
 
 export default function CreateMaterial() {
   const [name, setName] = useState("");
+  // const [type, setType] = useState<"plastic" | "resin">("plastic"); // Заглушка для type
   const [quantityStorage, setQuantityStorage] = useState(0.0);
   const router = useRouter();
   const { user } = useAuthStore();
@@ -18,17 +18,20 @@ export default function CreateMaterial() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (quantityStorage <= 0) {
+      toast.error("Количество на складе должно быть больше 0!");
+      return;
+    }
     try {
-      const newMaterial = {
-        name,
-        quantity_storage: quantityStorage,
-      };
-      await createMaterial(newMaterial);
+      setIsLoading(true);
+      await createMaterial({ name, quantity_storage: quantityStorage });
       toast.success("Материал успешно добавлен!");
       router.push("/materials");
     } catch (error) {
       console.error("Error creating material:", error);
       toast.error("Не удалось добавить материал");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -39,17 +42,15 @@ export default function CreateMaterial() {
   return (
     <AuthGuard requiredRole="глава лаборатории">
       <div className="container mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800">
-            Добавить материал
-          </h1>
-        </div>
+        <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
+          Добавить материал
+        </h1>
 
         <div className="card max-w-lg mx-auto">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-cyan-700 mb-1">
-                Название материала *
+                Название материала
               </label>
               <input
                 type="text"
@@ -61,9 +62,27 @@ export default function CreateMaterial() {
               />
             </div>
 
+            {/* <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Тип материала 
+              </label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as "plastic" | "resin")}
+                className="form-input"
+                required
+              >
+                <option value="plastic">Пластик</option>
+                <option value="resin">Смола</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Тип материала будет использоваться в будущем
+              </p>
+            </div> */}
+
             <div>
               <label className="block text-sm font-medium text-cyan-700 mb-1">
-                Количество на складе (г/мл) *
+                Количество на складе (г/мл)
               </label>
               <input
                 type="number"
@@ -74,6 +93,7 @@ export default function CreateMaterial() {
                 }
                 className="form-input"
                 placeholder="0.0"
+                min="0.1"
                 required
               />
             </div>

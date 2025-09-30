@@ -10,5 +10,4 @@ class Material(Base):  # Описывает материал для печати
     name = Column(String, unique=True, nullable=False)
     quantity_storage = Column(Float, nullable=False)  # Количество на складе
 
-    printer = relationship("Printer", back_populates="materials")
     jobs = relationship("Job", back_populates="material") 
