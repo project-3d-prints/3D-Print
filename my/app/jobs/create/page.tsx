@@ -95,7 +95,7 @@ export default function CreateJob() {
         duration,
         deadline,
         material_amount: materialAmount,
-        material_id: materialId, // Убрано parseInt, так как materialId уже строка
+        material_id: materialId,
       });
       toast.success("Заявка успешно создана!");
       router.push("/jobs/queue/0");
@@ -128,7 +128,7 @@ export default function CreateJob() {
                 value={printerId}
                 onChange={(e) => {
                   setPrinterId(Number(e.target.value));
-                  setMaterialId(""); // Сбрасываем материал при смене принтера
+                  setMaterialId("");
                 }}
                 className="form-input"
                 required

@@ -1,4 +1,3 @@
-// app/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -13,6 +12,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isBurgerOpen, setIsBurgerOpen] = useState(false);
+
+  console.log("Sidebar user state:", { user, isAuthenticated });
 
   const navItems = [
     {
@@ -64,13 +65,13 @@ export default function Sidebar() {
       iconActive: "/img/queue2.svg",
       allowedRoles: ["глава лаборатории", "учитель", "студент"],
     },
-    {
-      href: "/admin",
-      label: "Админ-панель",
-      icon: "/img/men.svg",
-      iconActive: "/img/men2.svg",
-      allowedRoles: ["глава лаборатории"],
-    },
+    // {
+    //   href: "/admin",
+    //   label: "Админ-панель",
+    //   icon: "/img/men.svg",
+    //   iconActive: "/img/men2.svg",
+    //   allowedRoles: ["глава лаборатории"],
+    // },
   ];
 
   const hasAccess = (allowedRoles: string[]) => {

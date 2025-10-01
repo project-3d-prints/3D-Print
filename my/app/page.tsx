@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { getQueue } from "../lib/api";
-import { useAuthStore } from "../lib/store";
+import LoadingSpinner from "./LoadingSpinner";
+import Link from "next/link";
 
 interface Job {
   id: number;
@@ -15,79 +15,112 @@ interface Job {
   date: string;
   material: string;
   priority: number;
+  displayDate?: string;
+  created_at?: string;
 }
 
 export default function Home() {
-  const { isAuthenticated, user, setUser } = useAuthStore();
-  const router = useRouter();
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/users/auth/login");
-      return;
-    }
-
     async function fetchData() {
       setLoading(true);
       try {
-        const response = await getQueue(0, "");
-        console.log("Queue response:", response);
-        const jobs = Array.isArray(response) ? response : response.data || [];
-        const adaptedJobs = jobs
-          .map((job: Job) => ({
-            id: job.id,
-            printer_id: job.printer_id,
-            duration: job.duration,
-            deadline: job.deadline,
-            material_amount: job.material_amount,
-            user: job.user,
-            date: job.date || job.deadline || "Нет даты",
-            material: job.material,
-            priority: job.priority,
-          }))
-          .sort(
-            (a: Job, b: Job) =>
-              new Date(b.deadline).getTime() - new Date(a.deadline).getTime()
-          )
-          .slice(0, 3);
-        setRecentJobs(adaptedJobs);
+        const queueResponse = await getQueue(0, "");
+        if (queueResponse.data && Array.isArray(queueResponse.data)) {
+          const sortedJobs = queueResponse.data
+            .map((job: Job) => ({
+              ...job,
+              displayDate:
+                job.date || job.deadline || job.created_at || "Нет даты",
+            }))
+            .sort((a: Job, b: Job) => {
+              const dateA = new Date(a.displayDate!).getTime();
+              const dateB = new Date(b.displayDate!).getTime();
+              return dateB - dateA;
+            });
+          setRecentJobs(sortedJobs.slice(0, 5));
+        } else {
+          setRecentJobs([]);
+        }
       } catch (err) {
-        console.error("Error fetching recent jobs:", err);
+        console.error("Error fetching data:", err);
         setRecentJobs([]);
       } finally {
         setLoading(false);
       }
     }
-
     fetchData();
-  }, [isAuthenticated, router]);
+  }, []);
 
-  if (!isAuthenticated) return null;
+  if (loading) {
+    return <LoadingSpinner text="Загружаем заявки..." />;
+  }
 
   return (
-    <div className="container mx-auto p-4 ml-64">
-      <div className="bg-white p-6 rounded-md shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Последние заявки</h2>
-        {loading ? (
-          <p>Загрузка...</p>
-        ) : recentJobs.length > 0 ? (
-          <ul className="space-y-2">
-            {recentJobs.map((job) => (
-              <li key={job.id} className="p-2 border-b border-gray-200">
-                ID: {job.id}, Принтер: {job.printer_id}, Дедлайн: {job.deadline}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Нет последних заявок.</p>
-        )}
-      </div>
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-4">
-          Добро пожаловать, {user?.username || "Гость"}
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
+        Добро пожаловать в ЗD Print
+      </h1>
+      <p className="text-gray-600 mb-4">
+        <Link
+          href="/users/auth/login"
+          className="text-cyan-600 hover:underline"
+        >
+          Войдите
+        </Link>{" "}
+        или{" "}
+        <Link
+          href="/users/auth/register"
+          className="text-cyan-600 hover:underline"
+        >
+          зарегистрируйтесь
+        </Link>{" "}
+        для управления заявками и принтерами.
+      </p>
+
+      <div className="card">
+        <h2 className="text-xl font-semibold mb-4 text-cyan-700">
+          Последние заявки
         </h2>
+
+        {recentJobs.length > 0 ? (
+          <div className="space-y-3">
+            {recentJobs.map((job) => (
+              <div
+                key={job.id}
+                className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <div>
+                    <span className="font-medium text-cyan-700">ID:</span>
+                    <span className="ml-2">{job.id}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-cyan-700">Принтер:</span>
+                    <span className="ml-2 truncate">{job.printer_id}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-cyan-700">
+                      Пользователь:
+                    </span>
+                    <span className="ml-2">{job.user || "Не указан"}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-cyan-700">Дата:</span>
+                    <span className="ml-2 truncate">{job.displayDate}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-4xl lg:text-6xl mb-4">📃</div>
+            <p className="text-gray-500 text-lg">Нет заявок</p>
+          </div>
+        )}
       </div>
     </div>
   );

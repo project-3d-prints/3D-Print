@@ -22,7 +22,7 @@ export default function JobQueue() {
       printer_id: number;
       material_amount: number;
       warning?: string;
-      material?: string; // Изменено на строку
+      material?: string;
     }[]
   >([]);
   const [printers, setPrinters] = useState<
@@ -49,7 +49,6 @@ export default function JobQueue() {
         const fetchedPrinters = printersResponse.data || [];
         setPrinters(fetchedPrinters);
 
-        // Устанавливаем printerId из params
         const paramPrinterId = Number(params.printer_id);
         const selectedPrinterId = fetchedPrinters.some(
           (p: any) => p.id === paramPrinterId
@@ -57,7 +56,6 @@ export default function JobQueue() {
           ? paramPrinterId
           : 0;
 
-        // Если printerId из params некорректен, перенаправляем на /jobs/queue/0
         if (paramPrinterId !== selectedPrinterId) {
           router.replace(`/jobs/queue/0`);
           setPrinterId(0);
@@ -65,10 +63,9 @@ export default function JobQueue() {
           setPrinterId(selectedPrinterId);
         }
 
-        // Запрашиваем заявки
         const response = await getQueue(selectedPrinterId, day);
         console.log("Fetched jobs:", response.data);
-        // Сортировка по приоритету
+
         const sortedJobs = response.data.sort(
           (a: any, b: any) => a.priority - b.priority
         );

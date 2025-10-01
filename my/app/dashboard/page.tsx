@@ -27,10 +27,12 @@ interface Job {
 }
 
 export default function Dashboard() {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [loading, setLoading] = useState(true);
+
+  console.log("Dashboard user state:", { user, isAuthenticated, authLoading });
 
   useEffect(() => {
     async function fetchData() {
@@ -63,22 +65,30 @@ export default function Dashboard() {
         setLoading(false);
       }
     }
-    fetchData();
-  }, []);
+    if (isAuthenticated) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const getPrinterName = (printerId: number) => {
     const printer = printers.find((p) => p.id === printerId);
     return printer ? printer.name : "Неизвестный принтер";
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return <LoadingSpinner text="Загружаем данные..." />;
+  }
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
-        Добро пожаловать, {user?.username}
+        Добро пожаловать, {user?.username || "Неизвестный пользователь"}
       </h1>
 
       <div className="card">
@@ -141,7 +151,7 @@ export default function Dashboard() {
         </div>
         <div className="card text-center">
           <div className="text-2xl font-bold text-cyan-700 capitalize">
-            {user?.role}
+            {user?.role || "Неизвестная роль"}
           </div>
           <p className="text-gray-600">Ваша роль</p>
         </div>

@@ -10,7 +10,7 @@ import LoadingSpinner from "../../LoadingSpinner";
 
 export default function CreateMaterial() {
   const [name, setName] = useState("");
-  // const [type, setType] = useState<"plastic" | "resin">("plastic"); // Заглушка для type
+
   const [quantityStorage, setQuantityStorage] = useState(0.0);
   const router = useRouter();
   const { user } = useAuthStore();

@@ -26,7 +26,7 @@ export interface Job {
   date: string;
   priority: number;
   warning?: string;
-  material?: string; // Изменено на строку
+  material?: string;
 }
 
 export interface JobCreate {
@@ -98,7 +98,7 @@ export const createMaterial = async (
     const data = await response.json();
     return {
       ...data,
-      type: material.name.toLowerCase().includes("pla") ? "plastic" : "resin",
+      type: data.name.toLowerCase().includes("pla") ? "plastic" : "resin",
     };
   } catch (error) {
     console.error("Error creating material:", error);
@@ -315,5 +315,41 @@ export const login = async (username: string, password: string) => {
   } catch (error) {
     console.error("Error logging in:", error);
     throw error;
+  }
+};
+
+export const checkSession = async () => {
+  try {
+    console.log("Checking session with GET /jobs/queue/0");
+    const response = await fetch("http://localhost:8000/jobs/queue/0", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    console.log("Session check response status:", response.status);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Session check error response:", errorText);
+      return { isValid: false, role: null, username: null };
+    }
+
+    const roleCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("user_role="));
+    const usernameCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("username="));
+
+    const role = roleCookie
+      ? decodeURIComponent(roleCookie.split("=")[1])
+      : null;
+    const username = usernameCookie
+      ? decodeURIComponent(usernameCookie.split("=")[1])
+      : null;
+
+    return { isValid: true, role, username };
+  } catch (error) {
+    console.error("Error checking session:", error);
+    return { isValid: false, role: null, username: null };
   }
 };
