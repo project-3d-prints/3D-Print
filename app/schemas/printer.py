@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from enums import PrinterType  # общий Enum
+from app.enums import PrinterType  # общий Enum
 
 
 class PrinterBase(BaseModel):
@@ -8,21 +8,22 @@ class PrinterBase(BaseModel):
     quantity_material: int
 
 
-
 class PrinterCreate(PrinterBase):
     """Формат для создания нового принтера"""
+
     class Config:
         schema_extra = {
             "example": {
                 "name": "printer_1",
                 "type": "plastic",
-                "quantity_material": "Измеряется в гр или мл"
+                "quantity_material": "Измеряется в гр или мл",
             }
         }
 
 
 class PrinterOut(PrinterBase):
     """Формат ответа при возврате информации о принтере"""
+
     id: int
     user_id: int
     username: str
@@ -32,6 +33,7 @@ class PrinterOut(PrinterBase):
     class Config:
         from_attributes = True
 
+
 class UpdatePrinterQuantity(BaseModel):
     printer_id: int
-    quantity_printer: float 
+    quantity_printer: float

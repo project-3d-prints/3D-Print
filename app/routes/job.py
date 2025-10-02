@@ -1,20 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from collections import defaultdict
-from database import get_db
-from models.job import Job
-from models.user import User
-from models.material import Material  # Импорт модели Material
-from schemas.job import JobCreate, JobOut
-from dependencies import get_current_user
+from app.database import get_db
+from app.models.job import Job
+from app.models.user import User
+from app.models.material import Material
+from app.schemas.job import JobCreate, JobOut
+from app.dependencies import get_current_user
 from typing import List, Annotated
-from models.printer import Printer 
+from app.models.printer import Printer
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Query
-from utils.sort_jobs import sort_jobs
+from app.utils.sort_jobs import sort_jobs
 import logging
+from app.utils.validate_file_minio import validate_file_minio
+from app.utils.minio import minio_client
+import json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,18 +27,30 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 @router.post("/", response_model=JobOut)
 async def create_job(
-    job: JobCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)]
+    current_user: Annotated[User, Depends(get_current_user)],
+    job: JobCreate = Depends(),
+    file: Optional[UploadFile] = File(None),
 ) -> JobOut:
+
+    if file:
+        await validate_file_minio(file)
+
     priority_dct = {"глава лаборатории": 1, "учитель": 2, "студент": 3}
     priority = priority_dct.get(current_user.role.value)
-    WORKING_HOURS_PER_DAY = 13  
+    if priority is None:
+        raise HTTPException(status_code=400, detail="Недопустимая роль пользователя")
 
-    printer_result = await db.execute(select(Printer).where(Printer.id == job.printer_id))
+    WORKING_HOURS_PER_DAY = 13
+
+    printer_result = await db.execute(
+        select(Printer).where(Printer.id == job.printer_id)
+    )
     printer = printer_result.scalar_one_or_none()
     if not printer:
-        raise HTTPException(status_code=404, detail=f"Принтер {job.printer_id} не найден")
+        raise HTTPException(
+            status_code=404, detail=f"Принтер {job.printer_id} не найден"
+        )
 
     today = date.today()
     max_search_days = 30
@@ -47,33 +62,49 @@ async def create_job(
 
     selected_day = None
     try:
-        user_deadline = job.deadline if isinstance(job.deadline, date) else date.fromisoformat(job.deadline.strip())
+        user_deadline = (
+            job.deadline
+            if isinstance(job.deadline, date)
+            else date.fromisoformat(job.deadline.strip())
+        )
         if user_deadline > today:
-            total_duration = sum(j.duration for j in jobs_by_date.get(user_deadline, []))
+            total_duration = sum(
+                j.duration for j in jobs_by_date.get(user_deadline, [])
+            )
             if total_duration + job.duration <= WORKING_HOURS_PER_DAY:
                 selected_day = user_deadline
             else:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Недостаточно времени на {user_deadline} для принтера {job.printer_id}"
+                    detail=f"Недостаточно времени на {user_deadline} для принтера {job.printer_id}",
                 )
         else:
-            raise HTTPException(status_code=400, detail=f"Дедлайн {user_deadline} должен быть в будущем")
+            raise HTTPException(
+                status_code=400, detail=f"Дедлайн {user_deadline} должен быть в будущем"
+            )
     except ValueError:
-        raise HTTPException(status_code=400, detail="Неверный формат дедлайна (YYYY-MM-DD)")
+        raise HTTPException(
+            status_code=400, detail="Неверный формат дедлайна (YYYY-MM-DD)"
+        )
 
     if not selected_day:
         for offset in range(max_search_days):
             candidate_day = today + timedelta(days=offset)
-            total_duration = sum(j.duration for j in jobs_by_date.get(candidate_day, []))
+            total_duration = sum(
+                j.duration for j in jobs_by_date.get(candidate_day, [])
+            )
             if total_duration + job.duration <= WORKING_HOURS_PER_DAY:
                 selected_day = candidate_day
                 break
     if not selected_day:
-        raise HTTPException(status_code=400, detail="Нет свободного дня в ближайшие 30 дней")
+        raise HTTPException(
+            status_code=400, detail="Нет свободного дня в ближайшие 30 дней"
+        )
 
-    material_id = int(job.material_id)
-    material_result = await db.execute(select(Material).where(Material.id == material_id))
+    material_id = 1
+    material_result = await db.execute(
+        select(Material).where(Material.id == material_id)
+    )
     material = material_result.scalar_one_or_none()
     if not material:
         raise HTTPException(status_code=404, detail=f"Материал {material_id} не найден")
@@ -82,7 +113,7 @@ async def create_job(
         raise HTTPException(
             status_code=400,
             detail=f"Недостаточно материала в принтере {printer.name}. "
-                   f"Доступно: {printer.quantity_material}, требуется: {job.material_amount}"
+            f"Доступно: {printer.quantity_material}, требуется: {job.material_amount}",
         )
     printer.quantity_material -= job.material_amount
     db.add(printer)
@@ -90,21 +121,43 @@ async def create_job(
     db_job = Job(
         user_id=current_user.id,
         printer_id=job.printer_id,
-        material_id=material_id,
         duration=job.duration,
         deadline=selected_day,
-        created_at=datetime.utcnow().date(),
+        created_at=date.today(),
         material_amount=job.material_amount,
-        priority=priority
+        priority=priority,
+        material_id=material_id,
     )
     db.add(db_job)
     await db.commit()
     await db.refresh(db_job)
 
+    file_path = None
+    if file:
+        try:
+            file_path = await minio_client.upload_file(
+                file=file,
+                file_name=file.filename,
+                user_id=current_user.id,
+                job_id=db_job.id,
+            )
+            db_job.file_path = file_path
+            db.add(db_job)
+            await db.commit()
+            await db.refresh(db_job)
+        except Exception as err:
+            raise HTTPException(
+                status_code=500, detail=f"Ошибка загрузки файла: {str(err)}"
+            )
+
     warning = None
     CRITICAL_LEVEL = 10
     if printer.quantity_material < CRITICAL_LEVEL:
         warning = f"Внимание: в принтере {printer.name} осталось мало материала ({printer.quantity_material})!"
+
+    file_url = None
+    if file_path:
+        file_url = minio_client.get_temporary_url(file_path)
 
     job_out = JobOut(
         id=db_job.id,
@@ -118,7 +171,8 @@ async def create_job(
         user=current_user.username,
         date=db_job.deadline.isoformat(),
         material=material.name,
-        warning=warning
+        warning=warning,
+        file_path=file_url,
     )
 
     if warning:
@@ -129,12 +183,17 @@ async def create_job(
     return job_out
 
 
-@router.get("/queue/{printer_id}", response_model=List[JobOut], summary="Получить график заявок для принтера")
+@router.get(
+    "/queue/{printer_id}",
+    response_model=List[JobOut],
+    summary="Получить график заявок для принтера",
+)
 async def get_queue(
     printer_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    day: Optional[date] = Query(None, description="Фильтр по дате (YYYY-MM-DD)")
+    day: Optional[date] = Query(None, description="Фильтр по дате (YYYY-MM-DD)"),
 ) -> List[JobOut]:
+
     WORKING_HOURS_START = 8
     WORKING_HOURS_END = 21
     WORKING_HOURS_PER_DAY = WORKING_HOURS_END - WORKING_HOURS_START
@@ -169,20 +228,20 @@ async def get_queue(
         deadline_date = job.deadline
         if deadline_date not in jobs_by_date:
             jobs_by_date[deadline_date] = {
-                'jobs': [],
-                'total_material': 0,
-                'total_duration': 0
+                "jobs": [],
+                "total_material": 0,
+                "total_duration": 0,
             }
-        jobs_by_date[deadline_date]['jobs'].append(job)
-        jobs_by_date[deadline_date]['total_material'] += job.material_amount
-        jobs_by_date[deadline_date]['total_duration'] += job.duration
+        jobs_by_date[deadline_date]["jobs"].append(job)
+        jobs_by_date[deadline_date]["total_material"] += job.material_amount
+        jobs_by_date[deadline_date]["total_duration"] += job.duration
 
     for deadline_date, data in jobs_by_date.items():
-        total_duration = data['total_duration']
+        total_duration = data["total_duration"]
         if total_duration > WORKING_HOURS_PER_DAY:
             raise HTTPException(
                 status_code=400,
-                detail=f"Суммарное время заявок ({total_duration} часов) на {deadline_date} для принтера {printer_id} превышает рабочий день ({WORKING_HOURS_PER_DAY} часов)"
+                detail=f"Суммарное время заявок ({total_duration} часов) на {deadline_date} для принтера {printer_id} превышает рабочий день ({WORKING_HOURS_PER_DAY} часов)",
             )
 
     # Создаём объекты JobOut с заполненными полями
@@ -190,8 +249,15 @@ async def get_queue(
     for job in sorted_jobs:
         user_result = await db.execute(select(User).where(User.id == job.user_id))
         user = user_result.scalar_one_or_none()
-        material_result = await db.execute(select(Material).where(Material.id == job.material_id))
+        material_result = await db.execute(
+            select(Material).where(Material.id == job.material_id)
+        )
         material = material_result.scalar_one_or_none()
+
+        file_url = None
+        if job.file_path:
+            file_url = minio_client.get_temporary_url(job.file_path)
+
         job_out = JobOut(
             id=job.id,
             user_id=job.user_id,
@@ -202,9 +268,32 @@ async def get_queue(
             material_amount=job.material_amount,
             priority=job.priority,
             user=user.username if user else "Неизвестно",
-            date=job.deadline.isoformat() if job.deadline else None,  # Преобразуем date в строку или None
-            material=material.name if material else "Не указан"  # Используем имя материала
+            date=(
+                job.deadline.isoformat() if job.deadline else None
+            ),  # Преобразуем date в строку или None
+            material=(
+                material.name if material else "Не указан"
+            ),  # Используем имя материала
+            file_path=file_url,
         )
         job_outs.append(job_out)
 
     return job_outs
+
+
+@router.get("/download/{job_id}")
+async def get_download_url(
+    job_id: int,
+    db: Annotated[
+        AsyncSession,
+        Depends(get_db),
+    ],
+):
+    job_result = await db.execute(select(Job).where(Job.id == job_id))
+    job = job_result.scalar_one_or_none()
+
+    if not job or not job.file_path:
+        raise HTTPException(status_code=404, detail="Файл не найден")
+
+    file_url = minio_client.get_temporary_url(job.file_path)
+    return {"downlaod_url": file_url}

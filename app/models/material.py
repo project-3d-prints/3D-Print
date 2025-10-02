@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.ext.asyncio import AsyncSession
-from database import Base
+from app.database import Base
 from sqlalchemy.orm import relationship
+
 
 class Material(Base):  # Описывает материал для печати
     __tablename__ = "materials"

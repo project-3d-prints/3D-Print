@@ -1,19 +1,21 @@
 services:
   db:
     image: postgres:15
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password1
-      POSTGRES_DB: printer_queue
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 12
     networks:
       - app-network
 
@@ -26,24 +28,39 @@ services:
     networks:
       - app-network
 
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9010:9000"  # Изменен порт API на 9010
+      - "9003:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    networks:
+      - app-network
+
   web:
     build:
       context: .
       dockerfile: Dockerfile
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - .env
     ports:
       - "8000:8000"
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:password1@db:5432/printer_queue
-      SECRET_KEY: a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef
-      REDIS_URL: redis://redis:6379
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
     networks:
       - app-network
     volumes:
-      - ./app:/app
+      - ./app:/app/app
 
   frontend:
     build:
@@ -54,7 +71,7 @@ services:
     networks:
       - app-network
     volumes:
-      - ./my:/my # Убедимся, что путь совпадает с WORKDIR
+      - ./my:/my 
       - frontend_node_modules:/my/node_modules
     depends_on:
       - web
@@ -63,6 +80,7 @@ volumes:
   postgres_data:
   redis_data:
   frontend_node_modules:
+  minio_data:
 
 networks:
   app-network:

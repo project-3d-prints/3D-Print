@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, ForeignKey, Float, Date
+from sqlalchemy import Column, Integer, ForeignKey, Float, Date, String
 from sqlalchemy.ext.asyncio import AsyncSession
-from database import Base
+from app.database import Base
 from sqlalchemy.orm import relationship
+
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -14,7 +15,8 @@ class Job(Base):
     created_at = Column(Date, nullable=False)
     material_amount = Column(Float, nullable=False)
     priority = Column(Integer, nullable=False)
-    material_id = Column(Integer, ForeignKey("materials.id"), nullable=True)  # Добавлено для связи с материалом
+    material_id = Column(Integer, ForeignKey("materials.id"), nullable=True)
+    file_path = Column(String, nullable=True)
 
     user = relationship("User", back_populates="jobs")
     printer = relationship("Printer", back_populates="jobs")
