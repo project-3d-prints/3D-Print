@@ -65,13 +65,13 @@ export default function BurgerMenu({ isOpen, onClose }: BurgerMenuProps) {
       iconActive: "/img/queue2.svg",
       allowedRoles: ["глава лаборатории", "учитель", "студент"],
     },
-    {
-      href: "/admin",
-      label: "Админ-панель",
-      icon: "/img/men.svg",
-      iconActive: "/img/men2.svg",
-      allowedRoles: ["глава лаборатории"],
-    },
+    // {
+    //   href: "/admin",
+    //   label: "Админ-панель",
+    //   icon: "/img/men.svg",
+    //   iconActive: "/img/men2.svg",
+    //   allowedRoles: ["глава лаборатории"],
+    // },
   ];
 
   const hasAccess = (allowedRoles: string[]) => {

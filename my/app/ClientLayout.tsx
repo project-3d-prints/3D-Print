@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "../lib/store";
 import Sidebar from "./Sidebar";
 import { Toaster } from "react-hot-toast";
@@ -14,29 +14,45 @@ export default function ClientLayout({
 }) {
   const { checkAuth, isLoading, isAuthenticated } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
   const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    console.log("ClientLayout mounting, calling checkAuth");
+    console.log(
+      "ClientLayout mounting, calling checkAuth for pathname:",
+      pathname
+    );
     checkAuth().finally(() => {
       setSessionChecked(true);
       console.log("checkAuth completed, sessionChecked=true");
     });
-  }, [checkAuth]);
+  }, [checkAuth, pathname]);
 
   useEffect(() => {
     console.log("Checking redirect:", {
+      pathname,
       isLoading,
       isAuthenticated,
       sessionChecked,
     });
-    if (sessionChecked && !isLoading && !isAuthenticated) {
+    
+    if (
+      sessionChecked &&
+      !isLoading &&
+      !isAuthenticated &&
+      pathname !== "/" &&
+      !pathname.startsWith("/users/auth")
+    ) {
       console.log("Redirecting to login: isAuthenticated=false after check");
       router.push("/users/auth/login");
     } else if (sessionChecked && isAuthenticated) {
       console.log("Session valid, no redirect");
+    } else if (pathname === "/") {
+      console.log("Skipping redirect for root path");
+    } else if (pathname.startsWith("/users/auth")) {
+      console.log("Skipping redirect for auth pages");
     }
-  }, [isLoading, isAuthenticated, sessionChecked, router]);
+  }, [isLoading, isAuthenticated, sessionChecked, router, pathname]);
 
   return (
     <>

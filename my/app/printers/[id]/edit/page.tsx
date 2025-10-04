@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
 import AuthGuard from "../../../AuthGuard";
 import LoadingSpinner from "../../../LoadingSpinner";
-import Link from "next/link";
 
 export default function EditPrinter() {
   const params = useParams();
@@ -15,34 +14,37 @@ export default function EditPrinter() {
   const [name, setName] = useState("");
   const [type, setType] = useState<"plastic" | "resin">("plastic");
   const [quantityMaterial, setQuantityMaterial] = useState(0);
-  const [warning, setWarning] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchPrinter() {
+    async function fetchData() {
       try {
         setIsLoading(true);
-        const response = await getPrinter(id);
-        const { name, type, quantity_material, warning } = response.data;
+        const printerResponse = await getPrinter(id);
+        const { name, type, quantity_material } = printerResponse.data;
         setName(name);
         setType(type);
         setQuantityMaterial(quantity_material);
-        setWarning(warning || null);
       } catch (error) {
-        console.error("Error fetching printer:", error);
-        setError("Не удалось найти принтер");
-        toast.error("Не удалось найти принтер");
+        console.error("Ошибка загрузки данных:", error);
+        setError("Не удалось загрузить данные принтера");
+        toast.error("Не удалось загрузить данные");
       } finally {
         setIsLoading(false);
       }
     }
-    fetchPrinter();
+    fetchData();
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (quantityMaterial < 0) {
+      toast.error("Количество материала не может быть отрицательным");
+      return;
+    }
     try {
+      setIsLoading(true);
       await updatePrinterQuantity({
         printer_id: id,
         quantity_printer: quantityMaterial,
@@ -50,13 +52,15 @@ export default function EditPrinter() {
       toast.success("Принтер успешно обновлен!");
       router.push("/printers");
     } catch (error) {
-      console.error("Error updating printer:", error);
-      toast.error("Не удалось обновить принтер");
+      console.error("Ошибка обновления принтера:", error);
+      toast.error("Не удалось обновить данные");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (isLoading) {
-    return <LoadingSpinner text="Загружаем принтер..." />;
+    return <LoadingSpinner text="Загружаем данные..." />;
   }
 
   if (error) {
@@ -81,11 +85,9 @@ export default function EditPrinter() {
   return (
     <AuthGuard requiredRole="глава лаборатории">
       <div className="container mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800">
-            Редактирование принтера
-          </h1>
-        </div>
+        <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
+          Редактирование принтера
+        </h1>
 
         <div className="card max-w-lg mx-auto">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -119,22 +121,16 @@ export default function EditPrinter() {
               </label>
               <input
                 type="number"
-                step="0.1"
+                step="1" 
                 value={quantityMaterial}
                 onChange={(e) =>
-                  setQuantityMaterial(parseFloat(e.target.value) || 0)
+                  setQuantityMaterial(parseInt(e.target.value) || 0)
                 }
                 className="form-input"
                 min="0"
                 required
               />
             </div>
-
-            {warning && (
-              <div className="text-red-600 text-sm">
-                <span className="font-medium">Предупреждение:</span> {warning}
-              </div>
-            )}
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <button type="submit" className="btn btn-primary flex-1">

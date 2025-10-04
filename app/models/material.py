@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.ext.asyncio import AsyncSession
-from database import Base
+from app.database import Base
 from sqlalchemy.orm import relationship
+
 
 class Material(Base):  # Описывает материал для печати
     __tablename__ = "materials"
@@ -10,4 +11,4 @@ class Material(Base):  # Описывает материал для печати
     name = Column(String, unique=True, nullable=False)
     quantity_storage = Column(Float, nullable=False)  # Количество на складе
 
-    jobs = relationship("Job", back_populates="material") 
+    jobs = relationship("Job", back_populates="material")  # Добавлено для связи с Job

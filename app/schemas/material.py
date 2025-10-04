@@ -11,6 +11,7 @@ class MaterialOut(MaterialCreate):  # Формат ответа
         orm_mode = True
 
 class MaterialUpdate(BaseModel):  # Формат для обновления количества на складе
+    name: str | None = Field(None, example="PLA Updated")
     quantity_storage: float | None = Field(None, ge=0, example=15.0)
 
 # Используй для форм добавления/обновления материалов

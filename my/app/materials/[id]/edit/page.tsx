@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
 import AuthGuard from "../../../AuthGuard";
 import LoadingSpinner from "../../../LoadingSpinner";
-import Link from "next/link";
+
 
 export default function EditMaterial() {
   const params = useParams();
@@ -38,13 +38,35 @@ export default function EditMaterial() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (quantityStorage <= 0) {
+      toast.error(
+        "Количество материала не может быть отрицательным или нулевым!"
+      );
+      return;
+    }
     try {
+      setIsLoading(true);
       await updateMaterial(id, { quantity_storage: quantityStorage });
       toast.success("Материал успешно обновлен!");
       router.push("/materials");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating material:", error);
-      toast.error("Не удалось обновить материал");
+      const errorMessage = error.message || "Не удалось обновить материал";
+      if (
+        errorMessage.includes(
+          "Количество материала не может быть отрицательным или нулевым"
+        )
+      ) {
+        toast.error(
+          "Количество материала не может быть отрицательным или нулевым"
+        );
+      } else if (errorMessage.includes("Материал не найден")) {
+        toast.error("Материал не найден");
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -106,7 +128,7 @@ export default function EditMaterial() {
                   setQuantityStorage(parseFloat(e.target.value) || 0.0)
                 }
                 className="form-input"
-                min="0"
+                min="0.1"
                 required
               />
             </div>

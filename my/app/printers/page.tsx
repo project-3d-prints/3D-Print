@@ -14,8 +14,8 @@ export default function Printers() {
       name: string;
       type: string;
       quantity_material: number;
+      user_id: number;
       username: string;
-      warning?: string;
     }[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,62 +43,66 @@ export default function Printers() {
   return (
     <AuthGuard>
       <div className="container mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800">
-            Список принтеров
-          </h1>
-          <Link href="/printers/create" className="btn btn-primary">
-            Добавить принтер
-          </Link>
-        </div>
+        <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
+          Список принтеров
+        </h1>
 
         <div className="card">
           {printers.length > 0 ? (
-            <table className="table-auto w-full">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="px-4 py-2 text-left">ID</th>
-                  <th className="px-4 py-2 text-left">Название</th>
-                  <th className="px-4 py-2 text-left">Тип</th>
-                  <th className="px-4 py-2 text-left">
-                    Количество материала (г/мл)
-                  </th>
-                  <th className="px-4 py-2 text-left">Пользователь</th>
-                  <th className="px-4 py-2 text-left">Уведомления</th>
-                  <th className="px-4 py-2 text-left">Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {printers.map((printer) => (
-                  <tr key={printer.id} className="border-b">
-                    <td className="px-4 py-2">{printer.id}</td>
-                    <td className="px-4 py-2">{printer.name}</td>
-                    <td className="px-4 py-2">
-                      {printer.type === "plastic" ? "Пластик" : "Смола"}
-                    </td>
-                    <td className="px-4 py-2">
-                      {printer.quantity_material} г/мл
-                    </td>
-                    <td className="px-4 py-2">{printer.username}</td>
-                    <td className="px-4 py-2">
-                      {printer.warning ? (
-                        <span className="text-red-600">{printer.warning}</span>
-                      ) : (
-                        <span className="text-green-600">В норме</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
-                      <Link
-                        href={`/printers/${printer.id}/edit`}
-                        className="text-cyan-600 hover:underline"
-                      >
-                        Редактировать
-                      </Link>
-                    </td>
+            <>
+              <table className="table-auto w-full">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-4 py-2 text-left">ID</th>
+                    <th className="px-4 py-2 text-left">Название</th>
+                    <th className="px-4 py-2 text-left">Тип</th>
+                    <th className="px-4 py-2 text-left">
+                      Количество материала (г/мл)
+                    </th>
+                    <th className="px-4 py-2 text-left">Пользователь</th>
+                    <th className="px-4 py-2 text-left">Уведомления</th>
+                    <th className="px-4 py-2 text-left">Действия</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {printers.map((printer) => (
+                    <tr key={printer.id} className="border-b">
+                      <td className="px-4 py-2">{printer.id}</td>
+                      <td className="px-4 py-2">{printer.name}</td>
+                      <td className="px-4 py-2">
+                        {printer.type === "plastic" ? "Пластик" : "Смола"}
+                      </td>
+                      <td className="px-4 py-2">
+                        {printer.quantity_material} г/мл
+                      </td>
+                      <td className="px-4 py-2">{printer.username}</td>
+                      <td className="px-4 py-2">
+                        {printer.quantity_material < 10 ? (
+                          <span className="text-red-600">
+                            Низкий уровень материала
+                          </span>
+                        ) : (
+                          <span className="text-green-600">В норме</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2">
+                        <Link
+                          href={`/printers/${printer.id}/edit`}
+                          className="text-cyan-600 hover:underline"
+                        >
+                          Редактировать
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-6">
+                <Link href="/printers/create" className="btn btn-primary">
+                  Добавить принтер
+                </Link>
+              </div>
+            </>
           ) : (
             <div className="text-center py-8">
               <div className="text-4xl lg:text-6xl mb-4">🖨️</div>

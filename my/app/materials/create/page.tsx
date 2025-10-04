@@ -10,7 +10,6 @@ import LoadingSpinner from "../../LoadingSpinner";
 
 export default function CreateMaterial() {
   const [name, setName] = useState("");
-
   const [quantityStorage, setQuantityStorage] = useState(0.0);
   const router = useRouter();
   const { user } = useAuthStore();
@@ -19,7 +18,9 @@ export default function CreateMaterial() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (quantityStorage <= 0) {
-      toast.error("Количество на складе должно быть больше 0!");
+      toast.error(
+        "Количество материала не может быть отрицательным или нулевым!"
+      );
       return;
     }
     try {
@@ -27,9 +28,14 @@ export default function CreateMaterial() {
       await createMaterial({ name, quantity_storage: quantityStorage });
       toast.success("Материал успешно добавлен!");
       router.push("/materials");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating material:", error);
-      toast.error("Не удалось добавить материал");
+      const errorMessage = error.message || "Не удалось добавить материал";
+      if (errorMessage.includes("Материал с таким названием уже есть")) {
+        toast.error("Материал с таким названием уже есть");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }

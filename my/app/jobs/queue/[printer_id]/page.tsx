@@ -14,15 +14,18 @@ export default function JobQueue() {
   const [jobs, setJobs] = useState<
     {
       id: number;
+      user_id: number;
       user: string;
-      date: string;
-      material_id: number;
-      duration: number;
-      priority: number;
       printer_id: number;
+      duration: number;
+      deadline: string;
+      created_at: string;
       material_amount: number;
+      priority: number;
+      material_id: number | null;
+      material: string;
+      file_path?: string | null;
       warning?: string;
-      material?: string;
     }[]
   >([]);
   const [printers, setPrinters] = useState<
@@ -39,6 +42,52 @@ export default function JobQueue() {
     {}
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [downloadingJobs, setDownloadingJobs] = useState<{
+    [key: number]: boolean;
+  }>({});
+
+  // Функция для скачивания файла
+  const handleDownload = async (jobId: number, fileName: string) => {
+    setDownloadingJobs((prev) => ({ ...prev, [jobId]: true }));
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/jobs/download/${jobId}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Не удалось получить ссылку для скачивания");
+      }
+
+      const data = await response.json();
+
+      const downloadUrl = data.download_url;
+
+      if (!downloadUrl) {
+        throw new Error("Ссылка для скачивания не найдена в ответе");
+      }
+
+      // Создаем временную ссылку для скачивания
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      link.target = "_blank"; // Открываем в новой вкладке
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Файл скачивается");
+    } catch (error) {
+      console.error("Ошибка скачивания:", error);
+      toast.error("Не удалось скачать файл");
+    } finally {
+      setDownloadingJobs((prev) => ({ ...prev, [jobId]: false }));
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -188,6 +237,7 @@ export default function JobQueue() {
             {jobs.length > 0 ? (
               jobs.map((job) => {
                 const isExpanded = expandedJobs[job.id] || false;
+                const isDownloading = downloadingJobs[job.id] || false;
                 const { bg, text } = getPriorityStyles(job.priority);
                 const printer = printers.find((p) => p.id === job.printer_id);
 
@@ -236,27 +286,49 @@ export default function JobQueue() {
                       </div>
 
                       {isExpanded && (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <p className="text-sm">
+                        <div className="mt-3 pt-3 border-t border-gray-200 space-y-1 text-sm">
+                          <p>
                             <span className="font-medium">Дата:</span>{" "}
-                            {job.date || "Не указана"}
+                            {job.deadline || "Не указана"}
                           </p>
-                          <p className="text-sm">
+                          <p>
                             <span className="font-medium">Материал:</span>{" "}
-                            {job.material || `ID: ${job.material_id}`}
+                            {job.material ||
+                              `ID: ${job.material_id || "не указан"}`}
                           </p>
-                          <p className="text-sm">
+                          <p>
                             <span className="font-medium">
                               Количество материала:
                             </span>{" "}
                             {job.material_amount} г/мл
                           </p>
                           {job.warning && (
-                            <p className="text-sm text-red-600">
+                            <p className="text-red-600">
                               <span className="font-medium">
                                 Предупреждение:
                               </span>{" "}
                               {job.warning}
+                            </p>
+                          )}
+                          {job.file_path && (
+                            <p>
+                              <span className="font-medium">Файл:</span>{" "}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+
+                                  const fileName =
+                                    job.file_path?.split("/").pop() ||
+                                    `model_${job.id}.obj`;
+                                  handleDownload(job.id, fileName);
+                                }}
+                                disabled={isDownloading}
+                                className="text-blue-600 hover:underline bg-transparent border-none cursor-pointer disabled:text-gray-400 disabled:cursor-not-allowed"
+                              >
+                                {isDownloading
+                                  ? "Скачивание..."
+                                  : "Скачать файл"}
+                              </button>
                             </p>
                           )}
                         </div>

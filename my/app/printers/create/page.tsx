@@ -4,7 +4,6 @@ import { useState } from "react";
 import { createPrinter } from "../../../lib/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "../../../lib/store";
 import AuthGuard from "../../AuthGuard";
 import LoadingSpinner from "../../LoadingSpinner";
 
@@ -14,7 +13,6 @@ export default function CreatePrinter() {
   const [quantityMaterial, setQuantityMaterial] = useState(0);
   const [username, setUsername] = useState("");
   const router = useRouter();
-  const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,9 +31,16 @@ export default function CreatePrinter() {
       });
       toast.success("Принтер успешно добавлен!");
       router.push("/printers");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating printer:", error);
-      toast.error("Не удалось добавить принтер");
+      const errorMessage = error.message || "Не удалось добавить принтер";
+      if (errorMessage.includes("Принтер с таким названием уже есть")) {
+        toast.error("Принтер с таким названием уже есть");
+      } else if (errorMessage.includes("Пользователь с таким именем не найден")) {
+        toast.error("Пользователь с таким именем не найден");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
