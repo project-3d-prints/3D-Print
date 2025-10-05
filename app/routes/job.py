@@ -48,14 +48,10 @@ async def create_job(
 
     WORKING_HOURS_PER_DAY = 13
 
-    printer_result = await db.execute(
-        select(Printer).where(Printer.id == printer_id)
-    )
+    printer_result = await db.execute(select(Printer).where(Printer.id == printer_id))
     printer = printer_result.scalar_one_or_none()
     if not printer:
-        raise HTTPException(
-            status_code=404, detail=f"Принтер {printer_id} не найден"
-        )
+        raise HTTPException(status_code=404, detail=f"Принтер {printer_id} не найден")
 
     # Проверяем материал
     material_result = await db.execute(
@@ -114,7 +110,6 @@ async def create_job(
             status_code=400, detail="Нет свободного дня в ближайшие 30 дней"
         )
 
-    
     if printer.quantity_material < material_amount:
         raise HTTPException(
             status_code=400,
@@ -312,4 +307,5 @@ async def get_download_url(
         raise HTTPException(status_code=404, detail="Файл не найден")
 
     file_url = minio_client.get_temporary_url(job.file_path)
+    file_url = file_url.replace("minio:9000", "localhost:9001")
     return {"download_url": file_url}
