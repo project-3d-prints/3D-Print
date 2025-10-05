@@ -1,4 +1,7 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from collections import defaultdict
@@ -292,20 +295,27 @@ async def get_queue(
     return job_outs
 
 
-@router.get("/download/{job_id}")
-async def get_download_url(
-    job_id: int,
-    db: Annotated[
-        AsyncSession,
-        Depends(get_db),
-    ],
-):
+executor = ThreadPoolExecutor()
+
+
+@router.get("/download/{job_id}/file")
+async def download_file(job_id: int, db: AsyncSession = Depends(get_db)):
     job_result = await db.execute(select(Job).where(Job.id == job_id))
     job = job_result.scalar_one_or_none()
 
     if not job or not job.file_path:
         raise HTTPException(status_code=404, detail="Файл не найден")
 
-    file_url = minio_client.get_temporary_url(job.file_path)
-    file_url = file_url.replace("minio:9000", "localhost:9001")
-    return {"download_url": file_url}
+    loop = asyncio.get_running_loop()
+    # Получаем объект из MinIO как поток
+    data = await loop.run_in_executor(
+        executor,
+        lambda: minio_client.client.get_object(minio_client.bucket_name, job.file_path),
+    )
+
+    filename = job.file_path.split("/")[-1]
+    return StreamingResponse(
+        data,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
