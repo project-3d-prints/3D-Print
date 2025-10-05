@@ -296,4 +296,5 @@ async def get_download_url(
         raise HTTPException(status_code=404, detail="Файл не найден")
 
     file_url = minio_client.get_temporary_url(job.file_path)
+    file_url = file_url.replace("minio:9000", "localhost:9001")
     return {"downlaod_url": file_url}
