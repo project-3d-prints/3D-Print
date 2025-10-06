@@ -38,9 +38,7 @@ export default function JobQueue() {
     }[]
   >([]);
   const [day, setDay] = useState<string>("");
-  const [expandedJobs, setExpandedJobs] = useState<{ [key: number]: boolean }>(
-    {}
-  );
+  const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [downloadingJobs, setDownloadingJobs] = useState<{
     [key: number]: boolean;
@@ -87,6 +85,11 @@ export default function JobQueue() {
     } finally {
       setDownloadingJobs((prev) => ({ ...prev, [jobId]: false }));
     }
+  };
+
+  // Функция для переключения раскрытия заявки
+  const toggleJobExpansion = (jobId: number) => {
+    setExpandedJobId(expandedJobId === jobId ? null : jobId);
   };
 
   useEffect(() => {
@@ -236,7 +239,7 @@ export default function JobQueue() {
           <div className="grid-responsive">
             {jobs.length > 0 ? (
               jobs.map((job) => {
-                const isExpanded = expandedJobs[job.id] || false;
+                const isExpanded = expandedJobId === job.id;
                 const isDownloading = downloadingJobs[job.id] || false;
                 const { bg, text } = getPriorityStyles(job.priority);
                 const printer = printers.find((p) => p.id === job.printer_id);
@@ -244,16 +247,11 @@ export default function JobQueue() {
                 return (
                   <div
                     key={job.id}
-                    className="card cursor-pointer transition-all duration-200 hover:shadow-lg relative"
-                    onClick={() =>
-                      setExpandedJobs((prev) => ({
-                        ...prev,
-                        [job.id]: !isExpanded,
-                      }))
-                    }
+                    className="card cursor-pointer transition-all duration-300 hover:shadow-lg relative overflow-hidden"
+                    onClick={() => toggleJobExpansion(job.id)}
                   >
                     <div
-                      className={`absolute left-0 top-0 bottom-0 w-1.5 ${bg} rounded-l-md`}
+                      className={`absolute left-0 top-0 bottom-0 w-1.5 ${bg} rounded-l-md transition-colors duration-300`}
                     ></div>
 
                     <div className="ml-3">
@@ -262,7 +260,7 @@ export default function JobQueue() {
                           #{job.id}
                         </h3>
                         <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${bg} text-white`}
+                          className={`px-2 py-1 rounded text-xs font-medium ${bg} text-white transition-colors duration-300`}
                         >
                           {text}
                         </span>
@@ -285,7 +283,14 @@ export default function JobQueue() {
                         </p>
                       </div>
 
-                      {isExpanded && (
+                      {/* Анимированная секция дополнительной информации */}
+                      <div
+                        className={`overflow-hidden transition-all duration-500 ease-in-out ${
+                          isExpanded
+                            ? "max-h-96 opacity-100"
+                            : "max-h-0 opacity-0"
+                        }`}
+                      >
                         <div className="mt-3 pt-3 border-t border-gray-200 space-y-1 text-sm">
                           <p>
                             <span className="font-medium">Дата:</span>{" "}
@@ -316,14 +321,13 @@ export default function JobQueue() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-
                                   const fileName =
                                     job.file_path?.split("/").pop() ||
                                     `model_${job.id}.obj`;
                                   handleDownload(job.id, fileName);
                                 }}
                                 disabled={isDownloading}
-                                className="text-blue-600 hover:underline bg-transparent border-none cursor-pointer disabled:text-gray-400 disabled:cursor-not-allowed"
+                                className="text-blue-600 hover:underline bg-transparent border-none cursor-pointer disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
                               >
                                 {isDownloading
                                   ? "Скачивание..."
@@ -332,7 +336,26 @@ export default function JobQueue() {
                             </p>
                           )}
                         </div>
-                      )}
+                      </div>
+
+                      {/* Стрелка-индикатор */}
+                      <div className="flex justify-end mt-2">
+                        <svg
+                          className={`w-4 h-4 text-cyan-600 transition-transform duration-300 ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 );

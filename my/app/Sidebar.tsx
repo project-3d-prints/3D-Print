@@ -12,6 +12,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isBurgerOpen, setIsBurgerOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   console.log("Sidebar user state:", { user, isAuthenticated });
 
@@ -65,6 +66,7 @@ export default function Sidebar() {
       iconActive: "/img/queue2.svg",
       allowedRoles: ["глава лаборатории", "учитель", "студент"],
     },
+    // Закомментированный элемент админ-панели
     // {
     //   href: "/admin",
     //   label: "Админ-панель",
@@ -89,6 +91,10 @@ export default function Sidebar() {
     alert(`У вас недостаточно прав для доступа к "${itemLabel}".`);
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   return (
     <>
       <button
@@ -98,9 +104,36 @@ export default function Sidebar() {
         ☰
       </button>
 
-      <aside className="hidden lg:block fixed top-0 left-0 h-screen w-64 bg-cyan-700 text-cyan-50 p-4">
-        <div className="mb-8">
-          <h1 className="text-xl font-bold">ЗD Print</h1>
+      <aside
+        className={`hidden lg:block fixed top-0 left-0 h-screen bg-cyan-700 text-cyan-50 p-4 transition-all duration-300 ${
+          isSidebarCollapsed ? "w-16" : "w-64"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-8">
+          {!isSidebarCollapsed && (
+            <h1 className="text-xl font-bold">ЗD Print</h1>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1 rounded hover:bg-cyan-600 transition-colors"
+            title={isSidebarCollapsed ? "Развернуть" : "Свернуть"}
+          >
+            <svg
+              className={`w-5 h-5 transform transition-transform ${
+                isSidebarCollapsed ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={isSidebarCollapsed ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"}
+              />
+            </svg>
+          </button>
         </div>
 
         <nav className="space-y-2">
@@ -114,9 +147,10 @@ export default function Sidebar() {
                   userHasAccess ? (
                     <Link
                       href={item.href}
-                      className={`flex items-center space-x-2 p-2 rounded-md transition-colors duration-200 hover:bg-cyan-50 hover:text-cyan-700 group ${
+                      className={`flex items-center p-2 rounded-md transition-colors duration-200 hover:bg-cyan-50 hover:text-cyan-700 group ${
                         isActive ? "bg-cyan-50 text-cyan-700" : ""
-                      }`}
+                      } ${isSidebarCollapsed ? "justify-center" : ""}`}
+                      title={isSidebarCollapsed ? item.label : ""}
                     >
                       <div className="relative w-5 h-5">
                         <Image
@@ -138,13 +172,19 @@ export default function Sidebar() {
                           } group-hover:opacity-100`}
                         />
                       </div>
-                      <span>{item.label}</span>
+                      {!isSidebarCollapsed && (
+                        <span className="ml-2">{item.label}</span>
+                      )}
                     </Link>
                   ) : (
                     <div
-                      className="flex items-center space-x-2 p-2 rounded-md opacity-50"
+                      className={`flex items-center p-2 rounded-md opacity-50 ${
+                        isSidebarCollapsed ? "justify-center" : ""
+                      }`}
                       onClick={() => handleForbiddenClick(item.label)}
-                      title="Недостаточно прав"
+                      title={
+                        isSidebarCollapsed ? item.label : "Недостаточно прав"
+                      }
                       style={{ cursor: "url('/img/lock.png') 16 16, auto" }}
                     >
                       <div className="relative w-5 h-5">
@@ -156,13 +196,18 @@ export default function Sidebar() {
                           className="w-5 h-5"
                         />
                       </div>
-                      <span>{item.label}</span>
+                      {!isSidebarCollapsed && (
+                        <span className="ml-2">{item.label}</span>
+                      )}
                     </div>
                   )
                 ) : (
                   <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-not-allowed"
+                    className={`flex items-center p-2 rounded-md cursor-not-allowed ${
+                      isSidebarCollapsed ? "justify-center" : ""
+                    }`}
                     onClick={() => alert("Пожалуйста, войдите в аккаунт")}
+                    title={isSidebarCollapsed ? item.label : ""}
                   >
                     <div className="relative w-5 h-5">
                       <Image
@@ -173,7 +218,9 @@ export default function Sidebar() {
                         className="w-5 h-5"
                       />
                     </div>
-                    <span>{item.label}</span>
+                    {!isSidebarCollapsed && (
+                      <span className="ml-2">{item.label}</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -181,28 +228,80 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="absolute bottom-4 w-full px-4">
+        <div
+          className={`absolute bottom-4 left-0 right-0 px-4 ${
+            isSidebarCollapsed ? "text-center" : ""
+          }`}
+        >
           {isAuthenticated ? (
-            <div className="flex flex-col items-center justify-between">
-              <span className="mb-2 text-sm">
-                {user?.username || "Неизвестный пользователь"}
-              </span>
-              <span className="mb-2 text-xs text-cyan-200">
-                Роль: {user?.role}
-              </span>
+            <div
+              className={`flex flex-col ${
+                isSidebarCollapsed ? "items-center" : "items-start"
+              }`}
+            >
+              {!isSidebarCollapsed && (
+                <>
+                  <span className="mb-1 text-sm text-center w-full">
+                    {user?.username || "Неизвестный пользователь"}
+                  </span>
+
+                  <span className="mb-2 text-xs text-cyan-200 text-center w-full">
+                    Роль: {user?.role}
+                  </span>
+                </>
+              )}
+
               <button
                 onClick={handleLogout}
-                className="text-sm hover:underline w-full text-center text-white hover:text-cyan-200"
+                className={`text-sm hover:underline text-white hover:text-cyan-200 ${
+                  isSidebarCollapsed ? "w-auto" : "w-full text-center"
+                }`}
+                title={isSidebarCollapsed ? "Выйти" : ""}
               >
-                Выйти из аккаунта
+                {isSidebarCollapsed ? (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                  </svg>
+                ) : (
+                  "Выйти из аккаунта"
+                )}
               </button>
             </div>
           ) : (
             <Link
               href="/users/auth/login"
-              className="block text-center text-cyan-200 hover:text-cyan-100"
+              className={`block text-cyan-200 hover:text-cyan-100 ${
+                isSidebarCollapsed ? "text-center" : ""
+              }`}
+              title={isSidebarCollapsed ? "Войти" : ""}
             >
-              Войти
+              {isSidebarCollapsed ? (
+                <svg
+                  className="w-5 h-5 mx-auto"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                  />
+                </svg>
+              ) : (
+                "Войти"
+              )}
             </Link>
           )}
         </div>

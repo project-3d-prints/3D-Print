@@ -104,7 +104,7 @@ export default function BurgerMenu({ isOpen, onClose }: BurgerMenuProps) {
         }`}
       >
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-xl font-bold">3D Print</h1>
+          <h1 className="text-xl font-bold">ЗD Print</h1>
           <button
             onClick={onClose}
             className="text-2xl hover:text-cyan-200 transition-colors"

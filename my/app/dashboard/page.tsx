@@ -86,7 +86,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto">
       <h1 className="text-2xl lg:text-3xl font-bold text-cyan-800 mb-6">
         Добро пожаловать, {user?.username || "Неизвестный пользователь"}
       </h1>
