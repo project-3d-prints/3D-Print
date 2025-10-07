@@ -1,6 +1,15 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    UploadFile,
+    File,
+    Form,
+    Query,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -11,17 +20,14 @@ from app.models.user import User
 from app.models.material import Material
 from app.schemas.job import JobCreate, JobOut
 from app.dependencies import get_current_user
-from typing import List, Annotated
+from typing import List, Annotated, Optional
 from app.models.printer import Printer
-from datetime import date, datetime, timedelta, timezone
-from typing import Optional
-from fastapi import Query
+from datetime import date, timedelta
 from app.utils.sort_jobs import sort_jobs
 import logging
 from app.utils.validate_file_minio import validate_file_minio
 from app.utils.minio import minio_client
-import json
-from pydantic import ValidationError
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,6 +44,7 @@ async def create_job(
     deadline: str = Form(...),
     material_amount: float = Form(...),
     material_id: int = Form(...),  # Добавлено: принимаем material_id из формы
+    description: str = Form(...),
     file: Optional[UploadFile] = File(None),
 ) -> JobOut:
 
@@ -123,14 +130,14 @@ async def create_job(
     db.add(printer)
 
     # Проверяем достаточно ли материала на складе
-    if material.quantity_storage < material_amount:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Недостаточно материала на складе. "
-            f"Доступно: {material.quantity_storage}, требуется: {material_amount}",
-        )
-    material.quantity_storage -= material_amount
-    db.add(material)
+    # if material.quantity_storage < material_amount:
+    #     raise HTTPException(
+    #         status_code=400,
+    #         detail=f"Недостаточно материала на складе. "
+    #         f"Доступно: {material.quantity_storage}, требуется: {material_amount}",
+    #     )
+    # material.quantity_storage -= material_amount
+    # db.add(material)
 
     db_job = Job(
         user_id=current_user.id,
@@ -141,6 +148,7 @@ async def create_job(
         material_amount=material_amount,
         priority=priority,
         material_id=material_id,  # Используем переданный material_id
+        description=description,
     )
     db.add(db_job)
     await db.commit()
@@ -164,11 +172,6 @@ async def create_job(
                 status_code=500, detail=f"Ошибка загрузки файла: {str(err)}"
             )
 
-    warning = None
-    CRITICAL_LEVEL = 10
-    if printer.quantity_material < CRITICAL_LEVEL:
-        warning = f"Внимание: в принтере {printer.name} осталось мало материала ({printer.quantity_material})!"
-
     file_url = None
     if file_path:
         file_url = minio_client.get_temporary_url(file_path)
@@ -185,14 +188,10 @@ async def create_job(
         user=current_user.username,
         date=db_job.deadline.isoformat(),
         material=material.name,
-        warning=warning,
+        warning=db_job.material_amount < 10,
         file_path=file_url,
+        description=db_job.description,
     )
-
-    if warning:
-        job_out_dict = job_out.dict()
-        job_out_dict["warning"] = warning
-        return job_out_dict
 
     return job_out
 
@@ -289,6 +288,8 @@ async def get_queue(
                 material.name if material else "Не указан"
             ),  # Используем имя материала
             file_path=file_url,
+            description=job.description,
+            warning=job.material_amount < 10,
         )
         job_outs.append(job_out)
 

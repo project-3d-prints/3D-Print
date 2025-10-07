@@ -9,6 +9,7 @@ class JobCreate(BaseModel):
     duration: float
     deadline: str  # Строковый формат даты (например, "2025-09-14")
     material_amount: float
+    description: str
 
     class Config:
         from_attributes = True
@@ -26,8 +27,9 @@ class JobOut(BaseModel):
     user: str
     date: Optional[str] = None  # Необязательное поле, строка или None
     material: str  # Имя материала, например "ABS"
-    warning: Optional[str] = None
+    warning: bool
     file_path: Optional[str] = None
+    description: str
 
     class Config:
         from_attributes = True
