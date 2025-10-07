@@ -22,10 +22,9 @@ export default function JobQueue() {
       created_at: string;
       material_amount: number;
       priority: number;
-      material_id: number | null;
-      material: string;
       file_path?: string | null;
-      warning?: string;
+      warning?: boolean;
+      description: string;
     }[]
   >([]);
   const [printers, setPrinters] = useState<
@@ -44,41 +43,41 @@ export default function JobQueue() {
     [key: number]: boolean;
   }>({});
 
-  // Функция для скачивания файла
-  const handleDownload = async (jobId: number, fileName: string) => {
-    setDownloadingJobs((prev) => ({ ...prev, [jobId]: true }));
+  const getCleanFileName = (
+    filePath: string | null | undefined
+  ): string | null => {
+    if (!filePath) return null;
+    const cleanPath = filePath.split("?")[0];
+    const fileName = cleanPath.split("/").pop();
+    return fileName || null;
+  };
 
+  const handleDownload = async (jobId: number) => {
+    setDownloadingJobs((prev) => ({ ...prev, [jobId]: true }));
     try {
       const response = await fetch(
-        `http://localhost:8000/jobs/download/${jobId}`,
+        `http://localhost:8000/jobs/download/${jobId}/file`,
         {
           method: "GET",
           credentials: "include",
         }
       );
-
       if (!response.ok) {
-        throw new Error("Не удалось получить ссылку для скачивания");
+        throw new Error("Не удалось скачать файл");
       }
-
-      const data = await response.json();
-
-      const downloadUrl = data.download_url;
-
-      if (!downloadUrl) {
-        throw new Error("Ссылка для скачивания не найдена в ответе");
-      }
-
-      // Создаем временную ссылку для скачивания
+      const jobItem = jobs.find((job) => job.id === jobId);
+      const fileName =
+        getCleanFileName(jobItem?.file_path) || `model_${jobId}.obj`;
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = downloadUrl;
+      link.href = url;
       link.download = fileName;
-      link.target = "_blank"; // Открываем в новой вкладке
       document.body.appendChild(link);
       link.click();
+      window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-
-      toast.success("Файл скачивается");
+      toast.success("Файл скачан успешно");
     } catch (error) {
       console.error("Ошибка скачивания:", error);
       toast.error("Не удалось скачать файл");
@@ -87,7 +86,6 @@ export default function JobQueue() {
     }
   };
 
-  // Функция для переключения раскрытия заявки
   const toggleJobExpansion = (jobId: number) => {
     setExpandedJobId(expandedJobId === jobId ? null : jobId);
   };
@@ -117,7 +115,6 @@ export default function JobQueue() {
 
         const response = await getQueue(selectedPrinterId, day);
         console.log("Fetched jobs:", response.data);
-
         const sortedJobs = response.data.sort(
           (a: any, b: any) => a.priority - b.priority
         );
@@ -243,6 +240,7 @@ export default function JobQueue() {
                 const isDownloading = downloadingJobs[job.id] || false;
                 const { bg, text } = getPriorityStyles(job.priority);
                 const printer = printers.find((p) => p.id === job.printer_id);
+                const fileName = getCleanFileName(job.file_path);
 
                 return (
                   <div
@@ -283,7 +281,6 @@ export default function JobQueue() {
                         </p>
                       </div>
 
-                      {/* Анимированная секция дополнительной информации */}
                       <div
                         className={`overflow-hidden transition-all duration-500 ease-in-out ${
                           isExpanded
@@ -291,15 +288,10 @@ export default function JobQueue() {
                             : "max-h-0 opacity-0"
                         }`}
                       >
-                        <div className="mt-3 pt-3 border-t border-gray-200 space-y-1 text-sm">
+                        <div className="mt-3 pt-3 border-t border-gray-200 space-y-2 text-sm max-h-64 overflow-y-auto">
                           <p>
                             <span className="font-medium">Дата:</span>{" "}
                             {job.deadline || "Не указана"}
-                          </p>
-                          <p>
-                            <span className="font-medium">Материал:</span>{" "}
-                            {job.material ||
-                              `ID: ${job.material_id || "не указан"}`}
                           </p>
                           <p>
                             <span className="font-medium">
@@ -307,38 +299,35 @@ export default function JobQueue() {
                             </span>{" "}
                             {job.material_amount} г/мл
                           </p>
-                          {job.warning && (
-                            <p className="text-red-600">
-                              <span className="font-medium">
-                                Предупреждение:
-                              </span>{" "}
-                              {job.warning}
-                            </p>
+                          {job.description && (
+                            <div>
+                              <span className="font-medium">Описание:</span>
+                              <div className="mt-1 p-2 bg-gray-50 rounded-md max-h-32 overflow-y-auto">
+                                <p className="text-sm whitespace-pre-wrap break-words">
+                                  {job.description}
+                                </p>
+                              </div>
+                            </div>
                           )}
-                          {job.file_path && (
+                          {fileName && (
                             <p>
                               <span className="font-medium">Файл:</span>{" "}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const fileName =
-                                    job.file_path?.split("/").pop() ||
-                                    `model_${job.id}.obj`;
-                                  handleDownload(job.id, fileName);
+                                  handleDownload(job.id);
                                 }}
                                 disabled={isDownloading}
                                 className="text-blue-600 hover:underline bg-transparent border-none cursor-pointer disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+                                title={fileName}
                               >
-                                {isDownloading
-                                  ? "Скачивание..."
-                                  : "Скачать файл"}
+                                {isDownloading ? "Скачивание..." : fileName}
                               </button>
                             </p>
                           )}
                         </div>
                       </div>
 
-                      {/* Стрелка-индикатор */}
                       <div className="flex justify-end mt-2">
                         <svg
                           className={`w-4 h-4 text-cyan-600 transition-transform duration-300 ${

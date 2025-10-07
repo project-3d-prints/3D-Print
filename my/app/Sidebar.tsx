@@ -8,7 +8,7 @@ import { useState } from "react";
 import BurgerMenu from "./BurgerMenu";
 
 export default function Sidebar() {
-  const { isAuthenticated, user, clearAuth } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const pathname = usePathname();
   const router = useRouter();
   const [isBurgerOpen, setIsBurgerOpen] = useState(false);
@@ -66,7 +66,6 @@ export default function Sidebar() {
       iconActive: "/img/queue2.svg",
       allowedRoles: ["глава лаборатории", "учитель", "студент"],
     },
-    // Закомментированный элемент админ-панели
     // {
     //   href: "/admin",
     //   label: "Админ-панель",
@@ -82,8 +81,7 @@ export default function Sidebar() {
   };
 
   const handleLogout = () => {
-    clearAuth();
-    document.cookie = "session_id=; Max-Age=0; path=/";
+    logout();
     router.push("/users/auth/login");
   };
 

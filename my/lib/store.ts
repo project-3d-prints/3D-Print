@@ -11,6 +11,7 @@ interface AuthState {
   setAuth: (auth: { token: string; role: string; username: string }) => void;
   clearAuth: () => void;
   checkAuth: () => Promise<void>;
+  logout: (isSessionExpired?: boolean) => void; // Добавляем флаг
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -34,15 +35,47 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   checkAuth: async () => {
     set({ isLoading: true });
-    const session = await checkSession();
-    if (session.isValid && session.role) {
-      set({
-        user: { username: session.username || "unknown", role: session.role },
-        isAuthenticated: true,
-      });
-    } else {
+    try {
+      const session = await checkSession();
+      if (session.isValid && session.role) {
+        set({
+          user: { username: session.username || "unknown", role: session.role },
+          isAuthenticated: true,
+        });
+      } else {
+        set({ user: null, isAuthenticated: false });
+      }
+    } catch (error) {
+      console.error("Error checking auth:", error);
       set({ user: null, isAuthenticated: false });
+    } finally {
+      set({ isLoading: false });
     }
-    set({ isLoading: false });
+  },
+  logout: (isSessionExpired = false) => {
+    document.cookie = "user_role=; path=/; max-age=0";
+    document.cookie = "username=; path=/; max-age=0";
+    document.cookie = "session_id=; path=/; max-age=0";
+
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+
+    // Сохраняем причину выхода в sessionStorage
+    if (isSessionExpired) {
+      sessionStorage.setItem("logout_reason", "session_expired");
+    } else {
+      sessionStorage.setItem("logout_reason", "user_initiated");
+    }
+
+    sessionStorage.removeItem("was_authenticated");
+
+    console.log(
+      `User logged out. Reason: ${
+        isSessionExpired ? "session_expired" : "user_initiated"
+      }`
+    );
   },
 }));

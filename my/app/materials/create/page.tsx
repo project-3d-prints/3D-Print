@@ -11,6 +11,7 @@ import LoadingSpinner from "../../LoadingSpinner";
 export default function CreateMaterial() {
   const [name, setName] = useState("");
   const [quantityStorage, setQuantityStorage] = useState(0.0);
+  const [type, setType] = useState<"plastic" | "resin">("plastic");
   const router = useRouter();
   const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +26,11 @@ export default function CreateMaterial() {
     }
     try {
       setIsLoading(true);
-      await createMaterial({ name, quantity_storage: quantityStorage });
+      await createMaterial({
+        name,
+        quantity_storage: quantityStorage,
+        type,
+      });
       toast.success("Материал успешно добавлен!");
       router.push("/materials");
     } catch (error: any) {
@@ -68,9 +73,9 @@ export default function CreateMaterial() {
               />
             </div>
 
-            {/* <div>
+            <div>
               <label className="block text-sm font-medium text-cyan-700 mb-1">
-                Тип материала 
+                Тип материала
               </label>
               <select
                 value={type}
@@ -81,10 +86,7 @@ export default function CreateMaterial() {
                 <option value="plastic">Пластик</option>
                 <option value="resin">Смола</option>
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Тип материала будет использоваться в будущем
-              </p>
-            </div> */}
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-cyan-700 mb-1">

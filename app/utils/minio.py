@@ -1,5 +1,7 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from minio import Minio
-from minio.error import S3Error
+from minio import S3Error
 from fastapi import HTTPException
 import os
 from datetime import timedelta
@@ -7,6 +9,7 @@ from dotenv import load_dotenv
 import io
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))
+executor = ThreadPoolExecutor()
 
 
 class MinioClient:
@@ -36,12 +39,16 @@ class MinioClient:
             file_data = await file.read()
             file_size = len(file_data)
 
-            self.client.put_object(
-                bucket_name=self.bucket_name,
-                object_name=object_name,
-                data=io.BytesIO(file_data),
-                length=file_size,
-                content_type="application/octet-stream",
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                executor,
+                lambda: self.client.put_object(
+                    bucket_name=self.bucket_name,
+                    object_name=object_name,
+                    data=io.BytesIO(file_data),
+                    length=file_size,
+                    content_type="application/octet-stream",
+                ),
             )
 
             await file.seek(0)
@@ -59,6 +66,9 @@ class MinioClient:
                 bucket_name=self.bucket_name,
                 object_name=object_name,
                 expires=expires,
+                response_headers={
+                    "response-content-disposition": f'attachment; filename="{object_name.split("/")[-1]}"'
+                },
             )
             return url
         except S3Error as err:

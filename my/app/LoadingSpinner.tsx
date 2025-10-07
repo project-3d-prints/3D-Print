@@ -1,3 +1,4 @@
+// components/LoadingSpinner.tsx
 interface LoadingSpinnerProps {
   size?: "small" | "medium" | "large";
   text?: string;
@@ -15,9 +16,10 @@ export default function LoadingSpinner({
     large: "h-16 w-16",
   };
 
+  // Используем fixed позиционирование для полного контроля
   const containerClasses = fullScreen
-    ? "min-h-screen bg-gray-100 flex items-center justify-center flex-col"
-    : "flex items-center justify-center flex-col p-4";
+    ? "fixed inset-0 flex items-center justify-center flex-col z-50 bg-gray-100"
+    : "w-full min-h-[60vh] flex items-center justify-center flex-col";
 
   return (
     <div className={containerClasses}>

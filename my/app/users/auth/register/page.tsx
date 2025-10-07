@@ -63,17 +63,9 @@ export default function Register() {
               <label className="block text-sm font-medium text-cyan-700 mb-1">
                 Роль
               </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                required
-                disabled={isLoading}
-              >
-                <option value="студент">Студент</option>
-                <option value="учитель">Учитель</option>
-                <option value="глава лаборатории">Глава лаборатории</option>
-              </select>
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700">
+                Студент
+              </div>
             </div>
 
             <div>

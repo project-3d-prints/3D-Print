@@ -1,5 +1,4 @@
 from sqlalchemy import Column, Integer, ForeignKey, Float, Date, String
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import Base
 from sqlalchemy.orm import relationship
 
@@ -11,6 +10,7 @@ class Job(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     printer_id = Column(Integer, ForeignKey("printers.id"), nullable=False)
     duration = Column(Float, nullable=False)
+    description = Column(String, nullable=True)
     deadline = Column(Date, nullable=True)
     created_at = Column(Date, nullable=False)
     material_amount = Column(Float, nullable=False)
@@ -20,4 +20,4 @@ class Job(Base):
 
     user = relationship("User", back_populates="jobs")
     printer = relationship("Printer", back_populates="jobs")
-    material = relationship("Material", back_populates="jobs")  # Добавлено
+    material = relationship("Material", back_populates="jobs")

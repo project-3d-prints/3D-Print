@@ -23,26 +23,6 @@ body {
   }
 }
 
-.table-responsive {
-  @apply overflow-x-auto;
-}
-
-.table-responsive table {
-  @apply min-w-full;
-}
-
-.table-responsive th,
-.table-responsive td {
-  @apply px-3 py-2;
-}
-
-@media (max-width: 640px) {
-  .table-responsive th,
-  .table-responsive td {
-    @apply px-2 py-1 text-sm;
-  }
-}
-
 .card {
   @apply bg-white rounded-lg shadow-md p-4;
 }
@@ -88,5 +68,38 @@ body {
 @media (max-width: 640px) {
   .grid-responsive {
     @apply grid-cols-1 gap-3;
+  }
+}
+
+/* Улучшенные стили для карточек на мобильной версии */
+.table-card {
+  @apply border border-gray-200 p-4 bg-white rounded-lg shadow-md my-2;
+}
+
+.table-card-header {
+  @apply font-medium text-cyan-800 mb-3 text-lg;
+}
+
+.table-card-row {
+  @apply flex justify-between items-center py-2 text-sm border-b border-gray-100 last:border-b-0;
+}
+
+.table-card-label {
+  @apply font-medium text-gray-600;
+}
+
+.table-card-value {
+  @apply text-gray-800 font-semibold;
+}
+
+@media (min-width: 640px) {
+  .mobile-only {
+    @apply hidden;
+  }
+}
+
+@media (max-width: 640px) {
+  .desktop-only {
+    @apply hidden;
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getPrinters, getMaterials, createJob } from "../../../lib/api";
+import { getPrinters, createJob } from "../../../lib/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../../lib/store";
@@ -12,14 +12,11 @@ export default function CreateJob() {
   const [printers, setPrinters] = useState<
     { id: number; name: string; type: string; quantity_material: number }[]
   >([]);
-  const [materials, setMaterials] = useState<
-    { id: number; name: string; quantity_storage: number; type?: string }[]
-  >([]);
   const [printerId, setPrinterId] = useState(0);
-  const [materialId, setMaterialId] = useState<number | null>(null);
   const [duration, setDuration] = useState(0.0);
   const [deadline, setDeadline] = useState("");
   const [materialAmount, setMaterialAmount] = useState(0.0);
+  const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const router = useRouter();
   const { user } = useAuthStore();
@@ -35,10 +32,6 @@ export default function CreateJob() {
         const printersResponse = await getPrinters();
         console.log("Printers:", printersResponse.data);
         setPrinters(printersResponse.data || []);
-
-        const materialsResponse = await getMaterials();
-        console.log("Materials:", materialsResponse.data);
-        setMaterials(materialsResponse.data || []);
       } catch (err: any) {
         console.error("Ошибка загрузки данных:", err.message);
         toast.error("Ошибка при загрузке данных");
@@ -77,10 +70,6 @@ export default function CreateJob() {
       toast.error("Выберите принтер!");
       return;
     }
-    if (materialId === null) {
-      toast.error("Выберите материал!");
-      return;
-    }
     if (materialAmount <= 0) {
       toast.error("Количество материала должно быть больше 0!");
       return;
@@ -100,17 +89,6 @@ export default function CreateJob() {
       );
       return;
     }
-    const selectedMaterial = materials.find((m) => m.id === materialId);
-    if (!selectedMaterial) {
-      toast.error("Материал не найден!");
-      return;
-    }
-    if (selectedMaterial.quantity_storage < materialAmount) {
-      toast.error(
-        `Недостаточно материала на складе: доступно ${selectedMaterial.quantity_storage} г/мл, требуется ${materialAmount} г/мл`
-      );
-      return;
-    }
     const today = new Date().toISOString().split("T")[0];
     if (deadline < today) {
       toast.error("Дедлайн должен быть в будущем!");
@@ -124,7 +102,7 @@ export default function CreateJob() {
           duration,
           deadline,
           material_amount: materialAmount,
-          material_id: materialId,
+          description,
         },
         file,
       });
@@ -180,25 +158,6 @@ export default function CreateJob() {
 
             <div>
               <label className="block text-sm font-medium text-cyan-700 mb-1">
-                Материал
-              </label>
-              <select
-                value={materialId || ""}
-                onChange={(e) => setMaterialId(Number(e.target.value) || null)}
-                className="form-input"
-                required
-              >
-                <option value="">Выберите материал</option>
-                {materials.map((material) => (
-                  <option key={material.id} value={material.id}>
-                    {material.name} ({material.quantity_storage} г/мл)
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-cyan-700 mb-1">
                 Количество материала (г/мл)
               </label>
               <input
@@ -246,9 +205,21 @@ export default function CreateJob() {
 
             <div>
               <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Описание заявки
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="form-input min-h-[80px]"
+                placeholder="Опишите детали вашей заявки..."
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
                 Файл модели
               </label>
-
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <svg
@@ -280,7 +251,6 @@ export default function CreateJob() {
                   className="hidden"
                 />
               </label>
-
               {file && (
                 <p className="mt-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-md">
                   ✅ Выбран файл:{" "}

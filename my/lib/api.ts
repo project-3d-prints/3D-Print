@@ -4,7 +4,8 @@ export interface Material {
   id?: number;
   name: string;
   quantity_storage: number;
-  type?: "plastic" | "resin";
+  type: "plastic" | "resin";
+  warning?: boolean;
 }
 
 export interface Printer {
@@ -13,7 +14,7 @@ export interface Printer {
   type: "plastic" | "resin";
   quantity_material: number;
   username: string;
-  warning?: string;
+  warning?: boolean;
 }
 
 export interface Job {
@@ -22,14 +23,13 @@ export interface Job {
   user: string;
   printer_id: number;
   duration: number;
-  deadline: string; // ISO date string (e.g., "2025-10-03")
-  created_at: string; // ISO date string
+  deadline: string;
+  created_at: string;
   material_amount: number;
-  priority: number; // Integer (1=high, 2=medium, 3=low)
-  material_id: number | null;
-  material: string;
+  priority: number;
   file_path?: string | null;
-  warning?: string;
+  warning?: boolean;
+  description: string;
 }
 
 export interface JobCreate {
@@ -37,7 +37,7 @@ export interface JobCreate {
   duration: number;
   deadline: string;
   material_amount: number;
-  material_id: number; // Теперь обязательное поле
+  description: string;
 }
 
 export const getMaterials = async () => {
@@ -49,18 +49,88 @@ export const getMaterials = async () => {
       headers: { "Content-Type": "application/json" },
     });
     console.log("Materials response status:", response.status);
+
+    if (response.status === 422) {
+      console.warn("Validation error detected, trying to handle gracefully");
+      try {
+        const errorText = await response.text();
+        console.log("Validation error details:", errorText);
+        return await getMaterialsFallback();
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        return { data: [] };
+      }
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       console.log("Materials error response:", errorText);
       throw new Error(errorText || "Не удалось загрузить материалы");
     }
+
     const data = await response.json();
     console.log("Materials data:", data);
-    return Array.isArray(data) ? { data } : { data: [data] };
+
+    let materialsArray;
+    if (Array.isArray(data)) {
+      materialsArray = data;
+    } else if (data && typeof data === "object") {
+      materialsArray = [data];
+    } else {
+      materialsArray = [];
+    }
+
+    const processedMaterials = materialsArray.map((material: any) => ({
+      id: material.id,
+      name: material.name,
+      quantity_storage: material.quantity_storage || 0,
+      type: material.type || "plastic",
+      warning: material.warning || false,
+    }));
+
+    return { data: processedMaterials };
   } catch (error) {
     console.error("Ошибка загрузки материалов:", error);
-    return { data: [] };
+    try {
+      return await getMaterialsFallback();
+    } catch (fallbackError) {
+      console.error("Fallback method also failed:", fallbackError);
+      return { data: [] };
+    }
   }
+};
+
+const getMaterialsFallback = async () => {
+  console.log("Using fallback method to get materials");
+  const materials = [];
+
+  for (let id = 1; id <= 20; id++) {
+    try {
+      const response = await fetch(`http://localhost:8000/materials/${id}`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.ok) {
+        const materialData = await response.json();
+        materials.push({
+          id: materialData.id,
+          name: materialData.name,
+          quantity_storage: materialData.quantity_storage || 0,
+          type: materialData.type || "plastic",
+          warning: materialData.warning || false,
+        });
+      } else if (response.status === 404) {
+        continue;
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch material ${id}:`, error);
+    }
+  }
+
+  console.log("Fallback materials result:", materials);
+  return { data: materials };
 };
 
 export const getMaterial = async (id: number) => {
@@ -75,7 +145,7 @@ export const getMaterial = async (id: number) => {
     return {
       data: {
         ...data,
-        type: data.name.toLowerCase().includes("pla") ? "plastic" : "resin",
+        type: data.type || "plastic",
       },
     };
   } catch (error) {
@@ -84,9 +154,7 @@ export const getMaterial = async (id: number) => {
   }
 };
 
-export const createMaterial = async (
-  material: Omit<Material, "id" | "type">
-) => {
+export const createMaterial = async (material: Omit<Material, "id">) => {
   try {
     const response = await fetch("http://localhost:8000/materials/", {
       method: "POST",
@@ -95,14 +163,12 @@ export const createMaterial = async (
       body: JSON.stringify({
         name: material.name,
         quantity_storage: material.quantity_storage,
+        type: material.type,
       }),
     });
     if (!response.ok) throw new Error("Не удалось создать материал");
     const data = await response.json();
-    return {
-      ...data,
-      type: data.name.toLowerCase().includes("pla") ? "plastic" : "resin",
-    };
+    return data;
   } catch (error) {
     console.error("Ошибка создания материала:", error);
     throw error;
@@ -111,7 +177,7 @@ export const createMaterial = async (
 
 export const updateMaterial = async (
   id: number,
-  updates: { quantity_storage: number | null }
+  updates: { quantity_storage: number | null; name?: string | null }
 ) => {
   try {
     const response = await fetch(`http://localhost:8000/materials/${id}`, {
@@ -132,7 +198,6 @@ export const updateMaterial = async (
 export const getPrinters = async () => {
   try {
     const response = await fetch("http://localhost:8000/printers/", {
-      // Завершающий слеш
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -200,7 +265,7 @@ export const updatePrinterQuantity = async ({
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ printer_id, quantity_printer }), // Добавлено printer_id
+        body: JSON.stringify({ printer_id, quantity_printer }),
       }
     );
     console.log("Printer update response status:", response.status);
@@ -233,16 +298,7 @@ export const getQueue = async (printerId: number, day: string = "") => {
     }
     const data: Job[] = await response.json();
     console.log("Queue response data:", data);
-    const transformedData = data.map((job) => ({
-      ...job,
-      material:
-        typeof job.material === "string"
-          ? job.material
-          : `Material ID: ${job.material_id || "не указан"}`,
-      warning: job.material_amount > 0 ? undefined : "Недостаточно материала",
-    }));
-    console.log("Transformed jobs:", transformedData);
-    return { data: transformedData };
+    return { data };
   } catch (error) {
     console.error("Ошибка загрузки очереди:", error);
     throw error;
@@ -259,13 +315,11 @@ export const createJob = async ({
   try {
     console.log("Sending POST /jobs/ with data:", job);
     const formData = new FormData();
-
-    // поля как form data
     formData.append("printer_id", job.printer_id.toString());
     formData.append("duration", job.duration.toString());
     formData.append("deadline", job.deadline);
     formData.append("material_amount", job.material_amount.toString());
-    formData.append("material_id", job.material_id.toString()); 
+    formData.append("description", job.description);
 
     if (file) {
       formData.append("file", file);

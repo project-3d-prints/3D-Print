@@ -7,13 +7,13 @@ import { useRouter, useParams } from "next/navigation";
 import AuthGuard from "../../../AuthGuard";
 import LoadingSpinner from "../../../LoadingSpinner";
 
-
 export default function EditMaterial() {
   const params = useParams();
   const id = Number(params.id);
   const router = useRouter();
   const [name, setName] = useState("");
   const [quantityStorage, setQuantityStorage] = useState(0.0);
+  const [type, setType] = useState<"plastic" | "resin">("plastic");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,9 +22,10 @@ export default function EditMaterial() {
       try {
         setIsLoading(true);
         const response = await getMaterial(id);
-        const { name, quantity_storage } = response.data;
+        const { name, quantity_storage, type } = response.data;
         setName(name);
         setQuantityStorage(quantity_storage);
+        setType(type || "plastic");
       } catch (error) {
         console.error("Error fetching material:", error);
         setError("Не удалось найти материал");
@@ -46,7 +47,9 @@ export default function EditMaterial() {
     }
     try {
       setIsLoading(true);
-      await updateMaterial(id, { quantity_storage: quantityStorage });
+      await updateMaterial(id, {
+        quantity_storage: quantityStorage,
+      });
       toast.success("Материал успешно обновлен!");
       router.push("/materials");
     } catch (error: any) {
@@ -114,6 +117,23 @@ export default function EditMaterial() {
                 readOnly
                 className="form-input bg-gray-100 cursor-not-allowed"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cyan-700 mb-1">
+                Тип материала
+              </label>
+              <select
+                value={type}
+                disabled
+                className="form-input bg-gray-100 cursor-not-allowed"
+              >
+                <option value="plastic">Пластик</option>
+                <option value="resin">Смола</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Тип материала нельзя изменить после создания
+              </p>
             </div>
 
             <div>
