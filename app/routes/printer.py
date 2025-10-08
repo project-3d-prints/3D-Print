@@ -130,7 +130,7 @@ async def update_printer_quantity(
             )
 
         material_result = await db.execute(
-            select(Material).where(Material.type == updates.type)
+            select(Material).where(Material.type == printer.type)
         )
         material = material_result.scalar()
         if not material:

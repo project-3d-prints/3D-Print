@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 from app.enums import PrinterType  # общий Enum
 
@@ -36,5 +37,5 @@ class PrinterOut(PrinterBase):
 
 class UpdatePrinterQuantity(BaseModel):
     printer_id: int
-    type: PrinterType
+    type: Optional[PrinterType] = None
     quantity_printer: float
