@@ -15,9 +15,7 @@ class Job(Base):
     created_at = Column(Date, nullable=False)
     material_amount = Column(Float, nullable=False)
     priority = Column(Integer, nullable=False)
-    material_id = Column(Integer, ForeignKey("materials.id"), nullable=True)
     file_path = Column(String, nullable=True)
 
     user = relationship("User", back_populates="jobs")
     printer = relationship("Printer", back_populates="jobs")
-    material = relationship("Material", back_populates="jobs")

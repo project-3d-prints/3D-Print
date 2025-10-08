@@ -36,4 +36,5 @@ class PrinterOut(PrinterBase):
 
 class UpdatePrinterQuantity(BaseModel):
     printer_id: int
+    type: PrinterType
     quantity_printer: float

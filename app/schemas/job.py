@@ -26,7 +26,6 @@ class JobOut(BaseModel):
     priority: int
     user: str
     date: Optional[str] = None  # Необязательное поле, строка или None
-    material: str  # Имя материала, например "ABS"
     warning: bool
     file_path: Optional[str] = None
     description: str

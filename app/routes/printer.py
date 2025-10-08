@@ -4,8 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_db
 from app.models.printer import Printer
+from app.models.material import Material
 from app.models.user import UserRole, User
 from app.schemas.printer import PrinterCreate, PrinterOut, UpdatePrinterQuantity
+from app.schemas.material import MaterialUpdate
 from app.dependencies import get_current_user
 from typing import List
 import logging
@@ -14,7 +16,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/printers", tags=["printers"])
 
 
-# Создает принтер (только lab_head).
 @router.post("/", response_model=PrinterOut)
 async def create_printer(
     printer: PrinterCreate,
@@ -54,7 +55,6 @@ async def create_printer(
     )
 
 
-# Возвращает список принтеров.
 @router.get("/", response_model=List[PrinterOut])
 async def get_printers(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -78,7 +78,6 @@ async def get_printers(
     ]
 
 
-# Возвращает конкретный принтер.
 @router.get("/{printer_id}", response_model=PrinterOut)
 async def get_printer(
     printer_id: int,
@@ -106,7 +105,6 @@ async def get_printer(
         raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
 
-# Обновляет количество материала в принтере.
 @router.patch("/{printer_id}", response_model=PrinterOut)
 async def update_printer_quantity(
     printer_id: int,
@@ -124,15 +122,31 @@ async def update_printer_quantity(
         printer = result.scalar_one_or_none()
         if not printer:
             raise HTTPException(status_code=404, detail="Принтер не найден")
+
         if updates.quantity_printer < 0:
             raise HTTPException(
                 status_code=400,
                 detail="Количество материала не может быть отрицательным",
             )
+
+        material_result = await db.execute(
+            select(Material).where(Material.type == updates.type)
+        )
+        material = material_result.scalar()
+        if not material:
+            raise HTTPException(status_code=404, detail="Материал не найден")
+        if material.quantity_storage < updates.quantity_printer:
+            raise HTTPException(
+                status_code=400,
+                detail="Недостаточно материала на складе",
+            )
+
+        material.quantity_storage -= updates.quantity_printer
         printer.quantity_material = updates.quantity_printer
         db.add(printer)
         await db.commit()
         await db.refresh(printer)
+
         logger.info(
             f"Printer {printer_id} quantity updated to {updates.quantity_printer}"
         )

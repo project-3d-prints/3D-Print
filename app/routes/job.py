@@ -43,7 +43,6 @@ async def create_job(
     duration: float = Form(...),
     deadline: str = Form(...),
     material_amount: float = Form(...),
-    material_id: int = Form(...),  # Добавлено: принимаем material_id из формы
     description: str = Form(...),
     file: Optional[UploadFile] = File(None),
 ) -> JobOut:
@@ -62,14 +61,6 @@ async def create_job(
     printer = printer_result.scalar_one_or_none()
     if not printer:
         raise HTTPException(status_code=404, detail=f"Принтер {printer_id} не найден")
-
-    # Проверяем материал
-    material_result = await db.execute(
-        select(Material).where(Material.id == material_id)
-    )
-    material = material_result.scalar_one_or_none()
-    if not material:
-        raise HTTPException(status_code=404, detail=f"Материал {material_id} не найден")
 
     today = date.today()
     max_search_days = 30
@@ -147,7 +138,6 @@ async def create_job(
         created_at=date.today(),
         material_amount=material_amount,
         priority=priority,
-        material_id=material_id,  # Используем переданный material_id
         description=description,
     )
     db.add(db_job)
@@ -187,7 +177,6 @@ async def create_job(
         priority=db_job.priority,
         user=current_user.username,
         date=db_job.deadline.isoformat(),
-        material=material.name,
         warning=db_job.material_amount < 10,
         file_path=file_url,
         description=db_job.description,
@@ -257,15 +246,14 @@ async def get_queue(
                 detail=f"Суммарное время заявок ({total_duration} часов) на {deadline_date} для принтера {printer_id} превышает рабочий день ({WORKING_HOURS_PER_DAY} часов)",
             )
 
-    # Создаём объекты JobOut с заполненными полями
     job_outs = []
     for job in sorted_jobs:
         user_result = await db.execute(select(User).where(User.id == job.user_id))
         user = user_result.scalar_one_or_none()
-        material_result = await db.execute(
-            select(Material).where(Material.id == job.material_id)
-        )
-        material = material_result.scalar_one_or_none()
+        # material_result = await db.execute(
+        #     select(Material).where(Material.id == job.material_id)
+        # )
+        # material = material_result.scalar_one_or_none()
 
         file_url = None
         if job.file_path:
@@ -276,17 +264,12 @@ async def get_queue(
             user_id=job.user_id,
             printer_id=job.printer_id,
             duration=job.duration,
-            deadline=job.deadline.isoformat(),  # Преобразуем date в строку
-            created_at=job.created_at.isoformat(),  # Преобразуем date в строку
+            deadline=job.deadline.isoformat(),
+            created_at=job.created_at.isoformat(),
             material_amount=job.material_amount,
             priority=job.priority,
             user=user.username if user else "Неизвестно",
-            date=(
-                job.deadline.isoformat() if job.deadline else None
-            ),  # Преобразуем date в строку или None
-            material=(
-                material.name if material else "Не указан"
-            ),  # Используем имя материала
+            date=(job.deadline.isoformat() if job.deadline else None),
             file_path=file_url,
             description=job.description,
             warning=job.material_amount < 10,
@@ -308,7 +291,7 @@ async def download_file(job_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Файл не найден")
 
     loop = asyncio.get_running_loop()
-    # Получаем объект из MinIO как поток
+
     data = await loop.run_in_executor(
         executor,
         lambda: minio_client.client.get_object(minio_client.bucket_name, job.file_path),
